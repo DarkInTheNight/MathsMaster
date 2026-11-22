@@ -60,13 +60,16 @@ import Testing
         #expect(lib.courses(in: .michaelmas).map(\.order) == [0, 1])
     }
 
+    // JSON dates are ISO-8601 without fractional seconds, so use whole-second dates.
+    let fixed = Date(timeIntervalSince1970: 1_800_000_000)
+
     @Test func manifestRoundTrip() throws {
-        var lib = LibraryManifest.makeNew()
+        var lib = LibraryManifest.makeNew(now: fixed)
         lib.addCourse(name: "Methods", term: .michaelmas)
         let data = try JSONCoding.encode(lib)
         #expect(try JSONCoding.decode(LibraryManifest.self, from: data) == lib)
 
-        var doc = DocumentManifest.notebook(title: "Lecture 16 working", pageCount: 2)
+        var doc = DocumentManifest.notebook(title: "Lecture 16 working", pageCount: 2, now: fixed)
         doc.pages.append(Page(background: .pdf(path: "Courses/Methods/Example sheets/Sheet 1.pdf", pageIndex: 0), question: 3))
         let docData = try JSONCoding.encode(doc)
         #expect(try JSONCoding.decode(DocumentManifest.self, from: docData) == doc)
