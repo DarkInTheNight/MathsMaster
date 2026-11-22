@@ -3,11 +3,13 @@ import SwiftUI
 @main
 struct MathsMasterApp: App {
     @State private var library = LibraryStore()
+    @State private var cardStore = CardStore()
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(library)
+                .environment(cardStore)
                 .task { await library.start() }
         }
     }

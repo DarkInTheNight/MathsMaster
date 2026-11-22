@@ -130,3 +130,13 @@ struct CardTests {
         #expect(!DeckMerge.isConflictCopy(fileName: "cards.json"))
     }
 }
+
+struct SanitizeTests {
+    @Test func stripsScriptsAndHandlers() {
+        let out = CardText.sanitize(#"<b onclick="x()">hi</b><script>alert(1)</script><img src="a.png" onerror=bad()>"#)
+        #expect(!out.contains("script"))
+        #expect(!out.contains("onclick"))
+        #expect(!out.contains("onerror"))
+        #expect(out.contains("<b>hi</b>"))
+    }
+}

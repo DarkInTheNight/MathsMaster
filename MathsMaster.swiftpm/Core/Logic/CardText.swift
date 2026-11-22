@@ -266,3 +266,17 @@ enum CardText {
         }
     }
 }
+
+extension CardText {
+    /// Strips everything outside the card subset: scripts, styles, iframes, event handlers and `javascript:` URLs.
+    static func sanitize(_ html: String) -> String {
+        var s = html
+        for tag in ["script", "style", "iframe", "object", "embed", "link", "meta"] {
+            s = s.replacingOccurrences(of: "<\(tag)[\\s\\S]*?</\(tag)\\s*>", with: "", options: [.regularExpression, .caseInsensitive])
+            s = s.replacingOccurrences(of: "<\(tag)\\b[^>]*>", with: "", options: [.regularExpression, .caseInsensitive])
+        }
+        s = s.replacingOccurrences(of: #"\s+on[a-zA-Z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)"#, with: "", options: .regularExpression)
+        s = s.replacingOccurrences(of: #"(?i)(href|src|xlink:href)\s*=\s*("|')\s*javascript:[^"']*("|')"#, with: "", options: .regularExpression)
+        return s
+    }
+}
