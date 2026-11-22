@@ -10,6 +10,7 @@ enum SidebarItem: Hashable {
 /// Two columns: sidebar → detail. Documents and reviews push full screen (design plan §2.2).
 struct MainSplitView: View {
     @Environment(LibraryStore.self) private var library
+    @Environment(CardStore.self) private var cardStore
     @State private var selection: SidebarItem? = .today
     @State private var path: [AppRoute] = []
     @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
@@ -35,6 +36,8 @@ struct MainSplitView: View {
             }
         }
         .environment(\.openRoute, OpenRouteAction { route in path.append(route) })
+        .task { await cardStore.load(from: library) }
+        .onChange(of: path.isEmpty) { if path.isEmpty { Task { await cardStore.load(from: library) } } }
     }
 
     @ViewBuilder
