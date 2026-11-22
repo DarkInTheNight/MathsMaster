@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: App build (Xcode 26 · iOS 26 SDK)
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      # Swift Playground 4.7 ships the iOS 26 SDK, so CI must use Xcode 26.x
+      # (never 27+): anything that compiles here must also compile on the iPad.
+      - name: Select Xcode 26.x
+        run: |
+          ls -d /Applications/Xcode*.app || true
+          XCODE=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
+          echo "Using $XCODE"
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i iphone || true
+
+      - name: List schemes
+        working-directory: MathsMaster.swiftpm
+        run: xcodebuild -list
+
+      - name: Build (Release, generic iOS device, unsigned)
+        working-directory: MathsMaster.swiftpm
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -scheme MathsMaster \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            -quiet \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+
+      - name: Package unsigned IPA (for SideStore)
+        run: |
+          APP=$(find "$RUNNER_TEMP/dd/Build/Products" -maxdepth 2 -name "*.app" -path "*iphoneos*" | head -1)
+          echo "App bundle: $APP"
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          cp -R "$APP" "$RUNNER_TEMP/ipa/Payload/"
+          (cd "$RUNNER_TEMP/ipa" && zip -qry MathsMaster.ipa Payload)
+          ls -la "$RUNNER_TEMP/ipa"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MathsMaster-unsigned-ipa
+          path: ${{ runner.temp }}/ipa/MathsMaster.ipa
+          retention-days: 14
+
+  core-tests:
+    name: Core unit tests (swift test)
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode 26.x
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          swift --version
+      - name: swift test
+        run: swift test
