@@ -1,0 +1,17 @@
+# Option 2: a subdomain with HTTPS via Caddy (automatic Let's Encrypt certificate).
+# Point an A/AAAA record for mm.example.com at the VPS, then:
+#   sudo cp Caddyfile.example /etc/caddy/Caddyfile && sudo systemctl reload caddy
+mm.example.com {
+	encode zstd gzip
+	# Large uploads (lecture PDFs, .apkg) and long-lived SSE replies.
+	request_body {
+		max_size 1GB
+	}
+	reverse_proxy 127.0.0.1:8787 {
+		flush_interval -1
+		transport http {
+			read_timeout 2h
+			write_timeout 2h
+		}
+	}
+}

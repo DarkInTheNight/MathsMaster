@@ -1,0 +1,11 @@
+# /etc/systemd/system/mathsmaster-snapshot.timer
+[Unit]
+Description=Nightly MathsMaster mirror snapshot
+
+[Timer]
+OnCalendar=*-*-* 04:30:00
+RandomizedDelaySec=15m
+Persistent=true
+
+[Install]
+WantedBy=timers.target
