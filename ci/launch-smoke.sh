@@ -16,11 +16,21 @@ rs.sort(key=lambda r:[int(x) for x in r["version"].split(".")])
 print(rs[-1]["identifier"] if rs else "")')
 DEVTYPE=$(xcrun simctl list devicetypes -j | python3 -c '
 import json,sys
-ds=[d["identifier"] for d in json.load(sys.stdin)["devicetypes"] if "iPad-Air" in d["identifier"]]
-print(ds[-1] if ds else "")')
+ds=[d for d in json.load(sys.stdin)["devicetypes"] if d.get("productFamily")=="iPad" and "iPad Air" in d["name"]]
+ds.sort(key=lambda d:d.get("minRuntimeVersion",0))
+print(ds[-1]["identifier"] if ds else "")')
 echo "Runtime: $RUNTIME  Device type: $DEVTYPE"
 [ -n "$RUNTIME" ] && [ -n "$DEVTYPE" ] || { echo "::error::No iOS simulator runtime or iPad Air device type"; exit 1; }
-UDID=$(xcrun simctl create mm-smoke "$DEVTYPE" "$RUNTIME")
+UDID=$(xcrun simctl create mm-smoke "$DEVTYPE" "$RUNTIME") || UDID=""
+if [ -z "$UDID" ]; then  # fall back to any existing iPad on that runtime
+  UDID=$(xcrun simctl list devices available -j | python3 -c '
+import json,sys
+ds=json.load(sys.stdin)["devices"].get(sys.argv[1],[])
+ip=[d["udid"] for d in ds if "iPad" in d["name"]]
+print(ip[0] if ip else "")' "$RUNTIME")
+fi
+[ -n "$UDID" ] || { echo "::error::No iPad simulator"; xcrun simctl list devices available; exit 1; }
+echo "Simulator: $UDID"
 xcrun simctl boot "$UDID"
 xcrun simctl bootstatus "$UDID" -b >/dev/null
 

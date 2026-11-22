@@ -70,7 +70,10 @@ jobs:
       # build above uses the newest Xcode 26.x, so also build with the oldest one.
       - name: Select oldest Xcode 26.x
         run: |
-          XCODE=$(ls -d /Applications/Xcode_26*.app | sort -V | head -1)
+          # The oldest Xcode 26.x on the runner that has the iOS platform installed.
+          for X in $(ls -d /Applications/Xcode_26*.app | sort -V); do
+            if DEVELOPER_DIR="$X/Contents/Developer" xcodebuild -showsdks 2>/dev/null | grep -q -- "-sdk iphoneos"; then XCODE=$X; break; fi
+          done
           echo "Using $XCODE"
           sudo xcode-select -s "$XCODE/Contents/Developer"
           xcodebuild -version
