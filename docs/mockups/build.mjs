@@ -17,6 +17,7 @@ const out = {
   '04-review.svg': screens.review(),
   '05-cards.svg': screens.cards(),
   '06-compact.svg': screens.compact(),
+  '07-iphone.svg': screens.iphone(),
 };
 for (const [name, svg] of Object.entries(out)) {
   fs.writeFileSync(path.join(here, name), svg + '\n');

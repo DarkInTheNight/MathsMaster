@@ -1,6 +1,6 @@
 // The six layout mockups. Each export returns a complete SVG document.
 import {
-  C, text, rect, circle, line, path, icon, sparkle, chip, badge, button, pdfThumb, noteThumb, device, sidebar, tw,
+  C, text, rect, circle, line, path, icon, sparkle, chip, badge, button, pdfThumb, noteThumb, device, sidebar, tw, STYLE, DEFS,
 } from './lib.mjs';
 
 const W = 1366, H = 1024; // iPad Air 13" landscape, points
@@ -309,11 +309,11 @@ export function editor() {
 
   // lasso action popover
   const mx = ax + 452, my = lassoY - 58;
-  s += rect(mx, my, 214, 200, { rx: 16, fill: '#fff', filter: 'sh2' });
-  const items = [['cardPlus', 'Make card', C.ink], ['sparkle', 'Transcribe to LaTeX', C.ink], ['sparkle', 'Explain this', C.ink], ['share', 'Copy as image', C.ink]];
+  s += rect(mx, my, 226, 200, { rx: 16, fill: '#fff', filter: 'sh2' });
+  const items = [['cardPlus', 'Make cards', C.ink], ['sparkle', 'Ask Claude about this', C.ink], ['sparkle', 'Transcribe', C.ink], ['share', 'Copy as image', C.ink]];
   items.forEach(([ic, t, c], i) => {
     const iy = my + 14 + i * 46;
-    if (i === 0) s += rect(mx + 8, iy - 4, 198, 40, { rx: 10, fill: C.accentSoft });
+    if (i === 0) s += rect(mx + 8, iy - 4, 210, 40, { rx: 10, fill: C.accentSoft });
     s += ic === 'sparkle' ? sparkle(mx + 20, iy + 6, 18, C.accent) : icon(ic, mx + 20, iy + 6, 20, C.accent);
     s += text(mx + 50, iy + 22, t, { size: 15, weight: i === 0 ? 650 : 450, fill: c });
   });
@@ -379,7 +379,7 @@ export function editor() {
   return device(W, H, s, { title: 'MathsMaster: editor in example-sheet mode' });
 }
 
-// ---------------------------------------------------------------- 04 Review
+// ---------------------------------------------------------------- 04 Review (compare layout after reveal)
 export function review() {
   let s = rect(0, 0, W, H, { fill: '#F1EFEA' });
   // top bar
@@ -393,219 +393,250 @@ export function review() {
   s += text(740, 64, 'New 3', { size: 13, weight: 700, fill: C.easy });
   s += text(800, 64, 'Learning 5', { size: 13, weight: 700, fill: C.hard });
   s += text(886, 64, 'Review 38', { size: 13, weight: 700, fill: C.good });
+  s += text(1110, 64, 'Compare', { size: 13, weight: 650, fill: C.accent });
+  s += icon('pane', 1172, 46, 24, C.accent);
   s += icon('undo', 1270, 46, 24, C.accent);
   s += icon('more', 1316, 46, 24, C.accent);
 
-  // card
-  const cx = 56, cy = 110, cw = 720, ch = 760;
-  s += rect(cx, cy, cw, ch, { rx: 26, fill: '#fff', filter: 'sh2' });
-  s += chip(cx + 28, cy + 26, 'Linear Algebra · Theorem · L15', { dot: C.indigo, fill: '#EEF0FE', color: '#3A47B8', size: 12.5, h: 26 }).svg;
-  s += text(cx + cw - 28, cy + 44, 'due 6 d overdue · reviewed 4×', { size: 12, fill: C.ink3, anchor: 'end' });
-  s += text(cx + 40, cy + 108, 'State the Cayley–Hamilton theorem.', { cls: 'serif', size: 28 });
-  // scratch area
-  const sy = cy + 140;
-  s += line(cx + 28, sy, cx + cw - 28, sy, C.line);
-  s += text(cx + 40, sy + 26, 'YOUR ATTEMPT', { size: 10.5, weight: 700, fill: C.ink3, ls: 1 });
-  s += icon('pen', cx + cw - 52, sy + 10, 18, C.ink3);
-  const hw = (x, y, str, o = {}) => text(x, y, str, { cls: 'hand', size: 22, fill: C.penBlue, raw: true, ...o });
-  s += hw(cx + 50, sy + 72, 'A ∈ Mₙ(F),  χ_A(t) = det(tI − A)');
-  s += hw(cx + 50, sy + 114, '⇒  χ_A(A) = 0     (A satisfies its own');
-  s += hw(cx + 290, sy + 150, 'char. polynomial)');
-  s += path(`M${cx + 50} ${sy + 126} q 30 6 60 0`, { stroke: C.penBlue, sw: 1.6 });
-  // answer
-  const ay = sy + 196;
-  s += rect(cx + 20, ay, cw - 40, 300, { rx: 18, fill: '#F7F6F2' });
-  s += text(cx + 40, ay + 30, 'ANSWER', { size: 10.5, weight: 700, fill: C.good, ls: 1 });
-  const ser = (x, y, str, size = 21) => text(x, y, str, { cls: 'serif', size, raw: true });
-  const it = (v) => `<tspan font-style="italic">${v}</tspan>`;
-  s += ser(cx + 40, ay + 72, `Let ${it('V')} be a finite-dimensional vector space over ${it('F')} and`);
-  s += ser(cx + 40, ay + 106, `${it('α')} ∈ End(${it('V')}) with characteristic polynomial`);
-  s += ser(cx + 200, ay + 150, `${it('χ')}<tspan font-size="14" dy="5" font-style="italic">α</tspan><tspan dy="-5">(</tspan>${it('t')}) = det(${it('t')}${it('ι')} − ${it('α')}).`, 23);
-  s += ser(cx + 40, ay + 194, `Then ${it('χ')}<tspan font-size="14" dy="5" font-style="italic">α</tspan><tspan dy="-5">(</tspan>${it('α')}) = 0.`);
-  s += line(cx + 40, ay + 222, cx + cw - 60, ay + 222, C.line);
-  s += icon('chevR', cx + 36, ay + 238, 18, C.ink2);
-  s += text(cx + 58, ay + 253, 'Extra: proof idea (triangularise over ℂ, or the adjugate trick)', { size: 14, fill: C.ink2 });
-  s += chip(cx + 40, ay + 268, '↗ LA notes 2026 · p. 61', { fill: '#fff', color: C.accent, size: 12.5, h: 24, stroke: C.line }).svg;
+  // ---- left: front + your attempt
+  const L = { x: 16, y: 100, w: 662, h: 910 };
+  s += rect(L.x, L.y, L.w, L.h, { rx: 24, fill: '#fff', filter: 'sh2' });
+  s += chip(L.x + 24, L.y + 22, 'Linear Algebra · Theorem · L15', { dot: C.indigo, fill: '#EEF0FE', color: '#3A47B8', size: 12.5, h: 26 }).svg;
+  s += text(L.x + L.w - 24, L.y + 40, 'reviewed 4× · last: Good', { size: 12, fill: C.ink3, anchor: 'end' });
+  s += text(L.x + 28, L.y + 92, 'Statement and Proof of the', { cls: 'serif', size: 26 });
+  s += text(L.x + 28, L.y + 126, 'Cayley–Hamilton Theorem', { cls: 'serif', size: 26 });
+  const ay = L.y + 152;
+  s += line(L.x + 20, ay, L.x + L.w - 20, ay, C.line);
+  s += rect(L.x + 2, ay + 2, L.w - 4, L.h - 160, { fill: 'url(#dots)', opacity: 0.55 });
+  s += text(L.x + 28, ay + 28, 'YOUR ATTEMPT', { size: 10.5, weight: 700, fill: C.ink3, ls: 1 });
+  s += text(L.x + L.w - 28, ay + 28, 'Pencil writes · finger scrolls · space grows as you write', { size: 11.5, fill: C.ink3, anchor: 'end' });
+  const hw = (x, y, str, o = {}) => text(x, y, str, { cls: 'hand', size: 20, fill: C.penBlue, raw: true, ...o });
+  let y = ay + 76;
+  const step = 42;
+  s += hw(L.x + 36, y, 'Thm. V f.d. over F, α ∈ End(V), χ_α(t) = det(tι − α)'); y += step;
+  s += hw(L.x + 150, y, '⇒  χ_α(α) = 0.'); y += step + 8;
+  s += hw(L.x + 36, y, 'Pf (F = ℂ). Pick a basis v₁, …, vₙ with [α] upper △,'); y += step;
+  s += hw(L.x + 66, y, 'diagonal λ₁, …, λₙ.  Put Uᵢ = ⟨v₁, …, vᵢ⟩, U₀ = 0.'); y += step;
+  s += hw(L.x + 36, y, 'Claim: (α − λᵢι) Uᵢ ⊆ Uᵢ₋₁');
+  s += hw(L.x + 380, y, 'why??', { fill: C.penRed });
+  s += path(`M${L.x + 372} ${y - 22} q 34 -14 66 2 q 10 22 -10 28 q -40 8 -58 -6 z`, { stroke: C.penRed, sw: 1.4 });
+  y += step;
+  s += hw(L.x + 36, y, 'Then (α−λ₁ι)(α−λ₂ι) ⋯ (α−λₙι) V'); y += step;
+  s += hw(L.x + 66, y, '⊆ (α−λ₁ι) ⋯ (α−λₙ₋₁ι) Uₙ₋₁ ⊆ ⋯ ⊆ U₀ = 0.'); y += step;
+  s += hw(L.x + 36, y, 'χ_α(t) = ∏ (t − λᵢ)   ⇒   χ_α(α) = 0.   ∎');
+  s += path(`M${L.x + 30} ${y + 10} h 420`, { stroke: C.penBlue, sw: 1.4 });
+  y += step + 14;
+  s += hw(L.x + 36, y, 'General F: pass to a splitting field?', { fill: C.penBlack }); y += step;
+  // rough sketch of flag
+  s += path(`M${L.x + 60} ${y + 10} h 60 M${L.x + 130} ${y + 10} h 60 M${L.x + 200} ${y + 10} h 60`, { stroke: C.penBlack, sw: 1.4 });
+  s += hw(L.x + 60, y + 4, 'U₁   ⊂   U₂   ⊂   U₃  …', { size: 17, fill: C.penBlack });
+  // more space hint
+  s += line(L.x + 28, L.y + L.h - 112, L.x + L.w - 28, L.y + L.h - 112, '#CFCAC1', 1.2, { dash: '6 6' });
+  s += text(L.x + L.w / 2, L.y + L.h - 90, 'Another screen of space appears when you write near the bottom', { size: 12, fill: C.ink3, anchor: 'middle' });
+  s += rect(L.x + L.w - 10, ay + 40, 4, 260, { rx: 2, fill: '#D3CEC5' });
 
-  // grade bar
-  const gy = 900;
-  s += rect(cx, gy, cw, 92, { rx: 26, fill: 'url(#glass)', stroke: '#fff', filter: 'sh2' });
-  const grades = [['Again', '< 10 m', C.again, 196, '1'], ['Hard', '2 d', C.hard, 140, '2'], ['Good', '6 d', C.good, 220, '3'], ['Easy', '14 d', C.easy, 124, '4']];
-  let gx = cx + 12;
+  // ---- right: the answer
+  const R = { x: 690, y: 100, w: 660, h: 910 };
+  s += rect(R.x, R.y, R.w, R.h, { rx: 24, fill: '#fff', filter: 'sh2' });
+  s += text(R.x + 28, R.y + 38, 'ANSWER', { size: 10.5, weight: 700, fill: C.good, ls: 1 });
+  let cx = R.x + 100;
+  for (const [t, on] of [['Motivation'], ['Statement'], ['Proof', true], ['Arbitrary F'], ['Intuition']]) {
+    const c = chip(cx, R.y + 22, t, { fill: on ? C.ink : C.surface2, color: on ? '#fff' : C.ink2, size: 12, h: 26 });
+    s += c.svg; cx += c.w + 6;
+  }
+  // actions
+  s += rect(R.x + 24, R.y + 64, 128, 38, { rx: 19, fill: C.accent });
+  s += sparkle(R.x + 38, R.y + 74, 18, '#fff');
+  s += text(R.x + 62, R.y + 88, 'Discuss', { size: 15, weight: 650, fill: '#fff' });
+  s += rect(R.x + 162, R.y + 64, 190, 38, { rx: 19, fill: '#fff', stroke: C.line });
+  s += sparkle(R.x + 176, R.y + 74, 18, C.accent);
+  s += text(R.x + 200, R.y + 88, 'Check my attempt', { size: 15, weight: 600, fill: C.accent });
+  s += rect(R.x + 362, R.y + 64, 104, 38, { rx: 19, fill: '#fff', stroke: C.line });
+  s += icon('source', R.x + 374, R.y + 73, 20, C.accent);
+  s += text(R.x + 398, R.y + 88, 'Source', { size: 15, fill: C.accent });
+  s += rect(R.x + 476, R.y + 64, 84, 38, { rx: 19, fill: '#fff', stroke: C.line });
+  s += icon('edit', R.x + 488, R.y + 73, 20, C.accent);
+  s += text(R.x + 512, R.y + 88, 'Edit', { size: 15, fill: C.accent });
+  s += icon('flag', R.x + R.w - 50, R.y + 72, 22, C.ink3);
+  s += line(R.x + 20, R.y + 120, R.x + R.w - 20, R.y + 120, C.line);
+
+  const it = (v) => `<tspan font-style="italic">${v}</tspan>`;
+  const sb = (b, v) => `${it(b)}<tspan font-size="12" dy="4" font-style="italic">${v}</tspan><tspan dy="-4">&#8202;</tspan>`;
+  const P = (y, str, o = {}) => text(R.x + 30, y, str, { cls: 'serif', size: 16.5, raw: true, ...o });
+  const B = (y, str) => text(R.x + 30, y, str, { cls: 'serif', size: 16.5, weight: 700 });
+  const D = (y, str) => text(R.x + R.w / 2, y, str, { cls: 'serif', size: 18, raw: true, anchor: 'middle' });
+  let ry = R.y + 152;
+  const lh = 24;
+  s += B(ry, '1. Motivation:'); ry += lh;
+  s += P(ry, `Since dim End(${it('V')}) = ${it('n')}², the maps ${it('ι')}, ${it('α')}, …, ${it('α')}<tspan font-size="11" dy="-7">${'n²'}</tspan><tspan dy="7"> are linearly dependent,</tspan>`); ry += lh;
+  s += P(ry, `so some polynomial kills ${it('α')}. Cayley–Hamilton names one of degree ${it('n')}.`); ry += lh + 14;
+  s += B(ry, '2. Statement:'); ry += lh;
+  s += P(ry, `Let ${it('V')} be an ${it('n')}-dimensional vector space over a field ${it('F')}, and ${it('α')} ∈ End(${it('V')}).`); ry += lh + 12;
+  s += D(ry, `${sb('χ', 'α')}(${it('α')}) = 0,   where   ${sb('χ', 'α')}(${it('t')}) = det(${it('t')}${it('ι')} − ${it('α')}).`); ry += lh + 18;
+  // proof section (highlighted as current)
+  s += rect(R.x + 16, ry - 22, R.w - 32, 266, { rx: 12, fill: '#F6F8FF' });
+  s += B(ry, '3. Proof (F = ℂ):'); ry += lh;
+  s += P(ry, `choose a basis ${sb('v', '1')}, …, ${sb('v', 'n')} in which ${it('α')} is upper triangular with`); ry += lh;
+  s += P(ry, `diagonal ${sb('λ', '1')}, …, ${sb('λ', 'n')} (possible because ${sb('χ', 'α')} splits over ℂ), and put`); ry += lh;
+  s += P(ry, `${sb('U', 'i')} = ⟨${sb('v', '1')}, …, ${sb('v', 'i')}⟩. Upper-triangularity says`); ry += lh + 12;
+  s += D(ry, `${it('α')}${sb('v', 'i')} = ${sb('λ', 'i')}${sb('v', 'i')} + (terms in ${sb('v', '1')}, …, ${sb('v', 'i−1')}),`); ry += lh + 8;
+  s += P(ry, `so (${it('α')} − ${sb('λ', 'i')}${it('ι')})${sb('U', 'i')} ⊆ ${sb('U', 'i−1')}. Applying the factors for ${it('i')} = ${it('n')}, …, 1`); ry += lh;
+  s += P(ry, 'in turn drops one level each time:'); ry += lh + 12;
+  s += D(ry, `${sb('χ', 'α')}(${it('α')}) ${it('V')} = (${it('α')} − ${sb('λ', '1')}${it('ι')}) ⋯ (${it('α')} − ${sb('λ', 'n')}${it('ι')}) ${it('V')} ⊆ ⋯ ⊆ ${sb('U', '0')} = 0.   ∎`); ry += lh + 30;
+  s += B(ry, '4. Arbitrary field F:'); ry += lh;
+  s += P(ry, `run the same argument over a field extension in which ${sb('χ', 'α')} splits;`); ry += lh;
+  s += P(ry, `${sb('χ', 'α')}(${it('α')}) = 0 is a statement about entries in ${it('F')}, so it holds over ${it('F')}.`); ry += lh + 14;
+  s += B(ry, 'Intuition:'); ry += lh;
+  s += P(ry, `each factor (${it('α')} − ${sb('λ', 'i')}${it('ι')}) peels one layer off the flag ${sb('U', '1')} ⊂ ⋯ ⊂ ${sb('U', 'n')}.`);
+  s += rect(R.x + R.w - 10, R.y + 140, 4, 300, { rx: 2, fill: '#D3CEC5' });
+
+  // floating grade bar (spans both panes)
+  const gx0 = 343, gy = 926, gw = 680;
+  s += rect(gx0, gy, gw, 78, { rx: 26, fill: 'url(#glass)', stroke: '#fff', filter: 'sh2' });
+  const grades = [['Again', '< 10 m', C.again, 196, '1'], ['Hard', '2 d', C.hard, 140, '2'], ['Good', '6 d', C.good, 212, '3'], ['Easy', '14 d', C.easy, 120, '4']];
+  let gx = gx0 + 8;
   grades.forEach(([g, iv, col, w, k]) => {
     const dom = g === 'Again' || g === 'Good';
-    s += rect(gx, gy + 12, w - 8, 68, { rx: 18, fill: dom ? col : '#fff', stroke: dom ? null : C.line });
-    s += text(gx + (w - 8) / 2, gy + 42, g, { size: 18, weight: 700, fill: dom ? '#fff' : col, anchor: 'middle' });
-    s += text(gx + (w - 8) / 2, gy + 64, iv, { size: 13, weight: 600, fill: dom ? 'rgba(255,255,255,0.9)' : C.ink2, anchor: 'middle', cls: 'rnd' });
-    s += text(gx + w - 20, gy + 28, k, { size: 10, weight: 700, fill: dom ? 'rgba(255,255,255,0.7)' : C.ink3, anchor: 'end' });
+    s += rect(gx, gy + 9, w - 8, 60, { rx: 18, fill: dom ? col : '#fff', stroke: dom ? null : C.line });
+    s += text(gx + (w - 8) / 2, gy + 36, g, { size: 17, weight: 700, fill: dom ? '#fff' : col, anchor: 'middle' });
+    s += text(gx + (w - 8) / 2, gy + 56, iv, { size: 12.5, weight: 600, fill: dom ? 'rgba(255,255,255,0.9)' : C.ink2, anchor: 'middle', cls: 'rnd' });
+    s += text(gx + w - 20, gy + 24, k, { size: 10, weight: 700, fill: dom ? 'rgba(255,255,255,0.7)' : C.ink3, anchor: 'end' });
     gx += w;
   });
-
-  // side rail
-  const rx = cx + cw + 18;
-  [['sparkle', 'Explain', true], ['source', 'Source'], ['edit', 'Edit'], ['flag', 'Flag'], ['more', 'More']].forEach(([ic, t, on], i) => {
-    const y = 150 + i * 84;
-    s += circle(rx + 26, y + 26, 26, on ? C.accent : '#fff', { stroke: on ? null : C.line });
-    s += ic === 'sparkle' ? sparkle(rx + 15, y + 15, 22, '#fff') : icon(ic, rx + 14, y + 14, 24, C.accent);
-    s += text(rx + 26, y + 70, t, { size: 11.5, fill: on ? C.accent : C.ink2, anchor: 'middle', weight: on ? 650 : 450 });
-  });
-
-  // explain panel
-  const ex = 880, ew = W - ex - 16;
-  s += rect(ex, 110, ew, 882, { rx: 24, fill: '#fff', filter: 'sh2' });
-  s += sparkle(ex + 22, 132, 22, C.accent);
-  s += text(ex + 54, 150, 'Explain', { size: 19, weight: 700 });
-  s += text(ex + ew - 22, 150, 'Gemini', { size: 12, fill: C.ink3, anchor: 'end' });
-  s += text(ex + 22, 178, 'Cayley–Hamilton: why is it true?', { size: 14, fill: C.ink2 });
-  const p = (y, str, o = {}) => text(ex + 22, y, str, { size: 15, cls: 'serif', raw: true, ...o });
-  let py = 220;
-  [
-    'Over ℂ, pick a basis <tspan font-style="italic">v</tspan><tspan font-size="11" dy="4">1</tspan><tspan dy="-4">, …, </tspan><tspan font-style="italic">v</tspan><tspan font-size="11" dy="4" font-style="italic">n</tspan><tspan dy="-4"> making </tspan><tspan font-style="italic">A</tspan>',
-    'upper triangular, with diagonal <tspan font-style="italic">λ</tspan><tspan font-size="11" dy="4">1</tspan><tspan dy="-4">, …, </tspan><tspan font-style="italic">λ</tspan><tspan font-size="11" dy="4" font-style="italic">n</tspan><tspan dy="-4">.</tspan>',
-    'Then (<tspan font-style="italic">A</tspan> − <tspan font-style="italic">λ</tspan><tspan font-size="11" dy="4" font-style="italic">i</tspan><tspan dy="-4"> </tspan><tspan font-style="italic">I</tspan>) maps ⟨<tspan font-style="italic">v</tspan><tspan font-size="11" dy="4">1</tspan><tspan dy="-4">, …, </tspan><tspan font-style="italic">v</tspan><tspan font-size="11" dy="4" font-style="italic">i</tspan><tspan dy="-4">⟩ into</tspan>',
-    '⟨<tspan font-style="italic">v</tspan><tspan font-size="11" dy="4">1</tspan><tspan dy="-4">, …, </tspan><tspan font-style="italic">v</tspan><tspan font-size="11" dy="4" font-style="italic">i</tspan><tspan font-size="11">−1</tspan><tspan dy="-4">⟩.</tspan> Applying the factors for',
-    '<tspan font-style="italic">i</tspan> = <tspan font-style="italic">n</tspan>, <tspan font-style="italic">n</tspan> − 1, …, 1 in turn shrinks <tspan font-style="italic">V</tspan> to 0,',
-    'and their product is <tspan font-style="italic">χ</tspan><tspan font-size="11" dy="4" font-style="italic">A</tspan><tspan dy="-4">(</tspan><tspan font-style="italic">A</tspan>).',
-  ].forEach((l) => { s += p(py, l); py += 26; });
-  py += 14;
-  s += rect(ex + 16, py - 4, ew - 32, 104, { rx: 14, fill: '#FFF6E5' });
-  s += text(ex + 30, py + 20, 'COMMON MISTAKE', { size: 10.5, weight: 700, fill: C.hard, ls: 1 });
-  s += p(py + 46, '“Substitute <tspan font-style="italic">t</tspan> = <tspan font-style="italic">A</tspan> into det(<tspan font-style="italic">tI</tspan> − <tspan font-style="italic">A</tspan>)” is wrong:', { size: 14.5 });
-  s += p(py + 70, 'det(<tspan font-style="italic">AI</tspan> − <tspan font-style="italic">A</tspan>) is a scalar, not the matrix', { size: 14.5 });
-  s += p(py + 92, '<tspan font-style="italic">χ</tspan><tspan font-size="10" dy="4" font-style="italic">A</tspan><tspan dy="-4">(</tspan><tspan font-style="italic">A</tspan>).', { size: 14.5 });
-  py += 130;
-  let chx = ex + 22;
-  for (const t of ['Example', 'Counterexample', 'Simpler', 'Over any field?']) {
-    const c = chip(chx, py, t, { fill: C.accentSoft, color: C.accent, size: 13, h: 30, pad: 12 });
-    if (chx + c.w > ex + ew - 16) { chx = ex + 22; py += 40; }
-    s += chip(chx, py, t, { fill: C.accentSoft, color: C.accent, size: 13, h: 30, pad: 12 }).svg;
-    chx += c.w + 8;
-  }
-  py += 52;
-  s += button(ex + 22, py, 170, 38, 'Save to Extra', { fill: C.surface2, color: C.ink, size: 14 });
-  // follow-up input
-  s += rect(ex + 16, 900, ew - 32, 48, { rx: 24, fill: C.surface2 });
-  s += text(ex + 36, 930, 'Ask a follow-up…', { size: 15, fill: C.ink3 });
-  s += icon('pen', ex + ew - 82, 912, 22, C.ink2);
-  s += circle(ex + ew - 40, 924, 18, C.accent);
-  s += icon('send', ex + ew - 50, 914, 20, '#fff', 2);
-  s += text(ex + 22, 974, 'AI budget today: 14 of 20 vision · 380 of 500 text', { size: 11.5, fill: C.ink3 });
-  return device(W, H, s, { title: 'MathsMaster: card review with Explain panel' });
+  return device(W, H, s, { title: 'MathsMaster: card review, compare layout after reveal' });
 }
 
-// ---------------------------------------------------------------- 05 Card editor + Inbox
+// ---------------------------------------------------------------- 05 Inbox + card thread
 export function cards() {
   let s = '';
-  // header
   s += icon('sidebar', 30, 44, 24, C.accent);
-  s += text(30, 108, 'Inbox', { size: 36, weight: 750 });
-  s += sparkle(150, 82, 22, C.accent);
-  s += text(30, 138, 'Linear Algebra · lectures 13–16  ·  18 cards  ·  Claude (VPS)  ·  2 h ago', { size: 15, fill: C.ink2 });
-  s += rect(30, 154, 300, 6, { rx: 3, fill: C.surface2 }) + rect(30, 154, 100, 6, { rx: 3, fill: C.accent });
-  s += text(340, 161, '6 of 18 triaged', { size: 12, fill: C.ink2 });
-  s += button(1130, 86, 206, 42, 'Accept all remaining', { fill: C.surface2, color: C.accent, size: 15 });
+  s += text(30, 106, 'Inbox', { size: 34, weight: 750 });
+  s += sparkle(138, 82, 20, C.accent);
+  s += text(170, 104, 'Linear Algebra · lectures 13–16 · Claude Opus 5.5 on your VPS · 2 h ago', { size: 15, fill: C.ink2 });
+  let rx0 = 30;
+  for (const [t, o] of [
+    ['⚠ 2 possible errors in the notes', { fill: '#FFF2DC', color: '#9A5B00' }],
+    ['? 1 unclear handwriting', { fill: '#FFF2DC', color: '#9A5B00' }],
+    ['+ 14 new cards', { fill: C.accentSoft, color: C.accent }],
+    ['✎ 4 changes to your cards', { fill: '#EEF0FE', color: '#3A47B8' }],
+    ['Read the full report ›', { fill: '#fff', color: C.accent, stroke: C.line }],
+  ]) { const c = chip(rx0, 124, t, { size: 12.5, h: 28, pad: 12, ...o }); s += c.svg; rx0 += c.w + 8; }
+  s += button(1150, 120, 196, 36, 'Accept all remaining', { fill: C.surface2, color: C.accent, size: 14 });
 
   // list
-  const LX = 20, LW = 410;
-  s += rect(LX, 180, LW, 832, { rx: 20, fill: '#fff', filter: 'sh' });
-  const rows = [
-    ['✓', C.good, 'Define an eigenvalue of α ∈ End(V).', 'Definition · L12'],
-    ['✓', C.good, 'Show that eigenvectors for distinct eigenvalues…', 'Theorem · L12'],
-    ['✕', C.again, 'What is a matrix?', 'Definition · L12 · rejected'],
-    ['✓', C.good, 'α is diagonalisable iff …', 'Theorem · L13'],
-    ['✓', C.good, 'Give a matrix that is not diagonalisable over ℂ.', 'Example · L13'],
-    ['✓', C.good, 'State the primary decomposition theorem.', 'Theorem · L14'],
-    ['●', C.accent, 'Define the minimal polynomial m_α of α…', 'Definition · L14', true],
-    ['', null, 'm_α divides every p with p(α) = 0. Why?', 'Proof idea · L14  ·  ⚠ similar card exists'],
-    ['', null, 'State the Cayley–Hamilton theorem.', 'Theorem · L15  ·  ⚠ duplicate?'],
-    ['', null, 'Compute χ and m for J₃(λ).', 'Example · L16'],
-    ['', null, 'Define a Jordan block J_k(λ).', 'Definition · L16'],
-    ['', null, 'Number of Jordan blocks for λ = ?', 'Formula · L16'],
-  ];
-  rows.forEach(([m, col, t, sub, sel], i) => {
-    const y = 196 + i * 68;
-    if (sel) s += rect(LX + 8, y - 6, LW - 16, 64, { rx: 12, fill: C.accentSoft });
-    if (m) s += text(LX + 26, y + 24, m, { size: 15, weight: 700, fill: col, anchor: 'middle' });
-    else s += circle(LX + 26, y + 19, 5, 'none', { stroke: C.ink3, sw: 1.5 });
-    s += text(LX + 46, y + 22, t.length > 44 ? t.slice(0, 43) + '…' : t, { size: 15, cls: 'serif', fill: m === '✕' ? C.ink3 : C.ink });
-    s += text(LX + 46, y + 42, sub, { size: 12, fill: sub.includes('⚠') ? C.hard : C.ink3 });
-    if (i < rows.length - 1 && !sel) s += line(LX + 46, y + 58, LX + LW - 16, y + 58, '#F0EDE7');
-  });
-
-  // editor
-  const EX = 450, EW = W - EX - 20;
-  s += rect(EX, 180, EW, 832, { rx: 20, fill: '#fff', filter: 'sh' });
-  // metadata chips
-  let mx = EX + 24;
-  for (const [t, o] of [['Linear Algebra', { dot: C.indigo, fill: '#EEF0FE', color: '#3A47B8' }], ['Basic', {}], ['Definition', { fill: '#E8F5EE', color: C.good }], ['L14', {}], ['#minimal-polynomial', { color: C.accent }]]) {
-    const c = chip(mx, 200, t, { size: 12.5, h: 26, ...o });
-    s += c.svg; mx += c.w + 8;
-  }
-  s += chip(EX + EW - 214, 200, '↗ Source: LA notes p. 58', { fill: '#fff', color: C.accent, size: 12, h: 26, stroke: C.line }).svg;
-
-  // fields (left) + preview (right)
-  const FX = EX + 24, FW = 404, PX = EX + 452, PW = EW - 476;
-  const field = (y, label, lines, h) => {
-    let r = text(FX, y, label, { size: 11, weight: 700, fill: C.ink3, ls: 1 });
-    r += rect(FX, y + 8, FW, h, { rx: 12, fill: '#FAF9F6', stroke: C.line });
-    lines.forEach((l, i) => { r += text(FX + 14, y + 34 + i * 22, l, { size: 13.5, cls: 'mono', fill: C.ink, raw: true }); });
+  const LX = 16, LW = 356;
+  s += rect(LX, 172, LW, 840, { rx: 20, fill: '#fff', filter: 'sh' });
+  const sec = (y, t) => text(LX + 20, y, t, { size: 11, weight: 700, fill: C.ink3, ls: 0.8 });
+  const row = (y, t1, t2, o = {}) => {
+    let r = '';
+    if (o.sel) r += rect(LX + 8, y - 6, LW - 16, 62, { rx: 12, fill: '#EEF0FE' });
+    if (o.mark) r += text(LX + 24, y + 22, o.mark, { size: 14, weight: 700, fill: o.markColor, anchor: 'middle' });
+    else r += circle(LX + 24, y + 17, 5, 'none', { stroke: C.ink3, sw: 1.5 });
+    r += text(LX + 42, y + 20, t1, { size: 14, cls: 'serif', weight: o.sel ? 700 : 400 });
+    r += text(LX + 42, y + 40, t2, { size: 11.5, fill: o.warn ? '#9A5B00' : C.ink3 });
     return r;
   };
-  const cmd = (t) => `<tspan fill="#7A3FB8">${t}</tspan>`;
-  const dol = '<tspan fill="#C2410C">$</tspan>';
-  s += field(258, 'FRONT', [`Define the minimal polynomial ${dol}m_${cmd('\\alpha')}${dol}`, `of ${dol}${cmd('\\alpha')} ${cmd('\\in')} ${cmd('\\mathrm')}{End}(V)${dol}.`], 70);
-  s += field(358, 'BACK', [
-    `The monic polynomial ${dol}m_${cmd('\\alpha')} ${cmd('\\in')} F[t]${dol} of`,
-    `least degree with ${dol}m_${cmd('\\alpha')}(${cmd('\\alpha')}) = 0${dol}. For`,
-    `every ${dol}p ${cmd('\\in')} F[t]${dol}:`,
-    `${dol}${dol}p(${cmd('\\alpha')}) = 0 ${cmd('\\iff')} m_${cmd('\\alpha')} ${cmd('\\mid')} p.${dol}${dol}`,
-  ], 112);
-  s += field(500, 'EXTRA', ['<tspan fill="#9C988F">Proof idea, notes… (optional)</tspan>'], 44);
-  // accessory bar
-  const keys = ['$ $', '$$ $$', '\\mathbb{}', '\\forall', '\\exists', '\\to', '^{}', '_{}', '\\frac', 'pmatrix'];
-  let kx = FX;
-  s += rect(FX - 8, 570, FW + 16, 46, { rx: 12, fill: C.surface2 });
-  [...keys.slice(0, 3), keys[3], keys[5], keys[6], '⋯'].forEach((k) => { const w = tw(k, 12.5, 0.62) + 16; s += rect(kx, 578, w, 30, { rx: 7, fill: '#fff' }); s += text(kx + w / 2, 598, k, { size: 12.5, cls: 'mono', anchor: 'middle' }); kx += w + 5; });
-  s += rect(FX, 630, 224, 40, { rx: 12, fill: '#fff', stroke: C.line });
-  s += icon('pen', FX + 14, 640, 20, C.accent);
-  s += text(FX + 42, 656, 'Write it  →  LaTeX', { size: 14, weight: 600, fill: C.accent });
-  s += sparkle(FX + 196, 642, 14, C.accent);
+  let y = 200;
+  s += sec(y, 'CHANGES TO YOUR CARDS · 4'); y += 14;
+  s += row(y, 'Statement and Proof of the Cayley–H…', 'your card · +2 additions · Additions only ✓', { sel: true }); y += 64;
+  s += row(y, 'Definition of an Eigenvalue, with Exa…', 'your card · +1 diagram · Additions only ✓', { mark: '✓', markColor: C.good }); y += 64;
+  s += row(y, 'Statement and Proof of Rank–Nullity', 'your card · +1 intuition'); y += 64;
+  s += row(y, 'Definition of the Characteristic Poly…', 'your card · fixes an error in the card', { warn: true }); y += 72;
+  s += sec(y, 'NEW CARDS · 14'); y += 14;
+  s += row(y, 'Definition of the Minimal Polynomial…', 'Definition · L14', { mark: '✓', markColor: C.good }); y += 64;
+  s += row(y, 'Statement and Proof of the Primary…', 'Theorem · L14'); y += 64;
+  s += row(y, 'Practice: χ and m for a Jordan Block', 'Practice · L16'); y += 64;
+  s += row(y, 'Statement and Proof of the Jordan…', 'Theorem · L16 · ⚠ notes may be wrong here', { warn: true }); y += 64;
+  s += row(y, 'Synthesis: When Is a Matrix Diagonal…', 'Synthesis · L13–16'); y += 64;
+  s += row(y, 'Practice: Is A² = A Diagonalisable?', 'Practice · L13 · Added: (not lectured)'); y += 64;
 
-  // preview
-  s += text(PX, 258, 'PREVIEW', { size: 11, weight: 700, fill: C.ink3, ls: 1 });
-  s += rect(PX, 266, PW, 404, { rx: 18, fill: '#FBFAF7', stroke: C.line });
+  // middle: your card with additions
+  const MX = 384, MW = 486;
+  s += rect(MX, 172, MW, 840, { rx: 20, fill: '#fff', filter: 'sh' });
+  s += text(MX + 22, 202, 'YOUR CARD · WITH CLAUDE’S ADDITIONS', { size: 11, weight: 700, fill: C.ink3, ls: 0.8 });
+  s += text(MX + 22, 236, 'Statement and Proof of the', { cls: 'serif', size: 20, weight: 700 });
+  s += text(MX + 22, 262, 'Cayley–Hamilton Theorem', { cls: 'serif', size: 20, weight: 700 });
   const it = (v) => `<tspan font-style="italic">${v}</tspan>`;
-  const sub = (b, v) => `${it(b)}<tspan font-size="13" dy="5" font-style="italic">${v}</tspan><tspan dy="-5"></tspan>`;
-  const ser = (x, y, str, o = {}) => text(x, y, str, { cls: 'serif', size: 19, raw: true, ...o });
-  s += ser(PX + 24, 310, `Define the minimal polynomial ${sub('m', 'α')}`);
-  s += ser(PX + 24, 338, `of ${it('α')} ∈ End(${it('V')}).`);
-  s += line(PX + 24, 362, PX + PW - 24, 362, C.line);
-  s += ser(PX + 24, 398, `The monic polynomial ${sub('m', 'α')} ∈ ${it('F')}[${it('t')}] of least`, { size: 18 });
-  s += ser(PX + 24, 426, `degree with ${sub('m', 'α')}(${it('α')}) = 0. For every`, { size: 18 });
-  s += ser(PX + 24, 454, `${it('p')} ∈ ${it('F')}[${it('t')}]:`, { size: 18 });
-  s += ser(PX + PW / 2, 504, `${it('p')}(${it('α')}) = 0  ⟺  ${sub('m', 'α')} | ${it('p')}.`, { anchor: 'middle', size: 22 });
-  s += text(PX + 24, 650, 'KaTeX · renders as you type · errors shown inline', { size: 12, fill: C.ink3 });
+  const sb = (b, v) => `${it(b)}<tspan font-size="11" dy="4" font-style="italic">${v}</tspan><tspan dy="-4">&#8202;</tspan>`;
+  const P = (y, str, o = {}) => text(MX + 22, y, str, { cls: 'serif', size: 15, raw: true, ...o });
+  const G = (y, h) => rect(MX + 16, y - 17, MW - 32, h, { rx: 6, fill: '#E3F5EA' });
+  let my = 300;
+  const lh = 22;
+  s += P(my, '<tspan font-weight="700">3. Proof (F = ℂ):</tspan> choose a basis in which α is upper'); my += lh;
+  s += P(my, `triangular with diagonal ${sb('λ', '1')}, …, ${sb('λ', 'n')}, and put ${sb('U', 'i')} = ⟨${sb('v', '1')}, …, ${sb('v', 'i')}⟩.`); my += lh;
+  // pointed-at line
+  s += rect(MX + 16, my - 18, 236, 26, { rx: 6, fill: 'none', stroke: C.accent, sw: 2 });
+  s += P(my, `Then (${it('α')} − ${sb('λ', 'i')}${it('ι')})${sb('U', 'i')} ⊆ ${sb('U', 'i−1')}<tspan>.</tspan>`); my += lh + 14;
+  s += G(my, lh * 4 + 6);
+  s += P(my, `<tspan fill="#1F6B43">Since ${it('α')} is upper triangular, ${it('α')}${sb('v', 'i')} = ${sb('λ', 'i')}${sb('v', 'i')} + (terms</tspan>`); my += lh;
+  s += P(my, `<tspan fill="#1F6B43">in ${sb('v', '1')}, …, ${sb('v', 'i−1')}), so (${it('α')} − ${sb('λ', 'i')}${it('ι')})${sb('v', 'i')} ∈ ${sb('U', 'i−1')}; and for</tspan>`); my += lh;
+  s += P(my, `<tspan fill="#1F6B43">${it('j')} &lt; ${it('i')}, (${it('α')} − ${sb('λ', 'i')}${it('ι')})${sb('v', 'j')} ∈ ${sb('U', 'j')} ⊆ ${sb('U', 'i−1')}. This is the only</tspan>`); my += lh;
+  s += P(my, `<tspan fill="#1F6B43">place upper-triangularity is used.</tspan>`); my += lh + 12;
+  s += P(my, `Applying the factors for ${it('i')} = ${it('n')}, …, 1 in turn shrinks ${it('V')} to 0.  ∎`); my += lh + 16;
+  s += G(my, lh * 2 + 6);
+  s += P(my, `<tspan fill="#1F6B43"><tspan font-weight="700">Insight:</tspan> each factor peels one layer off the flag</tspan>`); my += lh;
+  s += P(my, `<tspan fill="#1F6B43">${sb('U', '1')} ⊂ ${sb('U', '2')} ⊂ ⋯ ⊂ ${sb('U', 'n')} = ${it('V')}, like a nilpotent shift.</tspan>`); my += lh + 18;
+  s += P(my, '<tspan fill="#9C988F">… 4. Arbitrary field F  ·  Intuition  (unchanged)</tspan>');
+  // additions-only badge
+  s += rect(MX + 16, 840, MW - 32, 50, { rx: 12, fill: '#E3F5EA' });
+  s += icon('check', MX + 30, 853, 22, C.good, 2.4);
+  s += text(MX + 60, 862, 'Additions only ✓', { size: 15, weight: 700, fill: '#1F6B43' });
+  s += text(MX + 60, 880, 'Deleting the green text gives back your card exactly', { size: 12, fill: '#2F7A50' });
+  s += button(MX + 16, 950, 140, 46, 'Reject (R)', { fill: '#fff', color: C.again, size: 15, stroke: C.line });
+  s += button(MX + 166, 950, 120, 46, 'Edit (E)', { fill: '#fff', color: C.ink, size: 15, stroke: C.line });
+  s += button(MX + MW - 176, 950, 160, 46, 'Accept (A)', { size: 15, iconName: 'check' });
 
-  // AI edit strip with diff
-  const AY = 692;
-  s += rect(EX + 20, AY, EW - 40, 236, { rx: 18, fill: '#F3FAF8', stroke: '#CDE7E2' });
-  s += sparkle(EX + 38, AY + 18, 20, C.accent);
-  s += text(EX + 68, AY + 34, '“make the back one line shorter, keep the divisibility property”', { size: 15, fill: '#0F4D46', italic: true });
-  s += text(EX + 40, AY + 70, 'BACK: SUGGESTED CHANGE', { size: 10.5, weight: 700, fill: C.ink3, ls: 1 });
-  s += rect(EX + 40, AY + 80, EW - 80, 34, { rx: 8, fill: '#FDECEC' });
-  s += text(EX + 54, AY + 102, '− The monic polynomial m_α ∈ F[t] of least degree with m_α(α) = 0. For every p ∈ F[t]:', { size: 13, cls: 'mono', fill: '#A12B2F' });
-  s += rect(EX + 40, AY + 120, EW - 80, 34, { rx: 8, fill: '#E6F6EC' });
-  s += text(EX + 54, AY + 142, '+ The least-degree monic m_α with m_α(α) = 0; then for all p:', { size: 13, cls: 'mono', fill: '#1F6B43' });
-  s += button(EX + 40, AY + 172, 120, 40, 'Accept', { size: 15 });
-  s += button(EX + 170, AY + 172, 110, 40, 'Reject', { fill: '#fff', color: C.ink, size: 15, stroke: C.line });
-  s += rect(EX + 300, AY + 172, EW - 340, 40, { rx: 20, fill: '#fff', stroke: '#CDE7E2' });
-  s += text(EX + 320, AY + 197, 'Ask AI to change this card…', { size: 14, fill: C.ink3 });
-
-  // triage bar
-  s += button(EX + 20, 948, 200, 48, 'Reject  (R)', { fill: '#fff', color: C.again, size: 16, stroke: C.line });
-  s += button(EX + 232, 948, 160, 48, 'Edit  (E)', { fill: '#fff', color: C.ink, size: 16, stroke: C.line });
-  s += button(EX + EW - 240, 948, 220, 48, 'Accept  (A)', { size: 16, iconName: 'check' });
-  return device(W, H, s, { title: 'MathsMaster: AI inbox triage and card editor' });
+  // right: thread
+  const TX = 882, TW = W - TX - 16;
+  s += rect(TX, 172, TW, 840, { rx: 20, fill: '#fff', filter: 'sh' });
+  s += sparkle(TX + 20, 190, 20, C.accent);
+  s += text(TX + 48, 206, 'Discuss this card', { size: 17, weight: 700 });
+  s += text(TX + TW - 18, 206, 'Claude Opus 5.5', { size: 12, fill: C.ink3, anchor: 'end' });
+  s += text(TX + 20, 230, 'Has: LA notes (112 pp + your ink) · 186 cards · your card guidelines', { size: 11.5, fill: C.ink3 });
+  s += line(TX + 16, 244, TX + TW - 16, 244, C.line);
+  // user message 1 (right)
+  const ub = (y, h) => rect(TX + 70, y, TW - 86, h, { rx: 16, fill: C.accentSoft });
+  s += ub(258, 104);
+  s += rect(TX + 84, 270, TW - 114, 30, { rx: 8, fill: '#fff' });
+  s += text(TX + 96, 290, '“ (α − λᵢι)Uᵢ ⊆ Uᵢ₋₁ ”', { size: 14, cls: 'serif', fill: C.ink2, italic: true });
+  s += text(TX + 84, 324, 'Why does this hold? I don’t see where the', { size: 14.5, fill: '#0F4D46' });
+  s += text(TX + 84, 344, 'vᵢ term goes.', { size: 14.5, fill: '#0F4D46' });
+  // claude reply
+  const cr = (y, t) => text(TX + 22, y, t, { size: 14.5, cls: 'serif', raw: true });
+  let ty = 392;
+  cr(0, '');
+  for (const l of [
+    'In this basis αvᵢ = λᵢvᵢ + (terms in v₁, …, vᵢ₋₁):',
+    'that is what upper triangular means, column by',
+    'column. Subtracting λᵢvᵢ removes exactly the',
+    'vᵢ-component, and vectors already in Uᵢ₋₁ stay',
+    'there. I’ve written this into the proof (green),',
+    'and added a one-line insight about the flag.',
+  ]) { s += cr(ty, l); ty += 22; }
+  // proposal block
+  ty += 8;
+  s += rect(TX + 16, ty, TW - 32, 92, { rx: 14, fill: '#fff', stroke: '#CDE7E2', sw: 1.5 });
+  s += text(TX + 30, ty + 24, 'PROPOSED CHANGE · 2 additions', { size: 10.5, weight: 700, fill: C.accent, ls: 0.8 });
+  s += text(TX + TW - 30, ty + 24, 'Additions only ✓', { size: 12, weight: 700, fill: C.good, anchor: 'end' });
+  s += button(TX + 30, ty + 40, 110, 38, 'Apply', { size: 14 });
+  s += button(TX + 150, ty + 40, 150, 38, 'Keep talking', { fill: '#fff', color: C.accent, size: 14, stroke: C.line });
+  ty += 112;
+  // user message 2
+  s += ub(ty, 62);
+  s += text(TX + 84, ty + 26, 'Good. Also say what goes wrong if α', { size: 14.5, fill: '#0F4D46' });
+  s += text(TX + 84, ty + 46, 'isn’t triangularisable over F.', { size: 14.5, fill: '#0F4D46' });
+  ty += 86;
+  s += circle(TX + 28, ty - 5, 4, C.accent);
+  s += text(TX + 40, ty, 'Thinking · reading LA notes pp. 55–61 …', { size: 13, fill: C.ink2, italic: true });
+  // composer
+  s += rect(TX + 16, 944, TW - 32, 52, { rx: 26, fill: C.surface2 });
+  s += text(TX + 36, 975, 'Reply, or write with the Pencil…', { size: 14.5, fill: C.ink3 });
+  s += icon('pen', TX + TW - 136, 957, 22, C.ink2);
+  s += icon('mic', TX + TW - 100, 957, 22, C.ink2);
+  s += circle(TX + TW - 48, 970, 19, C.accent);
+  s += icon('send', TX + TW - 58, 960, 20, '#fff', 2);
+  s += text(TX + 20, 932, 'Tap any line of the card to quote it', { size: 11.5, fill: C.ink3 });
+  return device(W, H, s, { title: 'MathsMaster: inbox with Claude’s report, an additions-only change, and the card thread' });
 }
 
 // ---------------------------------------------------------------- 06 Compact (11" portrait)
@@ -699,5 +730,127 @@ export function compact() {
   <g transform="translate(${DW + 60} 0)">${fix(devB, 'b')}</g>
   <text x="${DW / 2}" y="${DH + 44}" text-anchor="middle" font-family="-apple-system,'Segoe UI',Ubuntu,Arial,sans-serif" font-size="22" fill="#6B6862">Today: sidebar hidden, single column</text>
   <text x="${DW + 60 + DW / 2}" y="${DH + 44}" text-anchor="middle" font-family="-apple-system,'Segoe UI',Ubuntu,Arial,sans-serif" font-size="22" fill="#6B6862">Editor: A4 at fit width (≈ 76 % of real size)</text>
+</svg>`;
+}
+
+// ---------------------------------------------------------------- 07 iPhone companion
+function phone(w, h, content, title) {
+  const bz = 12, W2 = w + bz * 2, H2 = h + bz * 2;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W2} ${H2}" width="${W2}" height="${H2}" role="img" aria-label="${title}">
+  <title>${title}</title>${STYLE}${DEFS}
+  <defs><clipPath id="pscreen"><rect x="0" y="0" width="${w}" height="${h}" rx="48"/></clipPath></defs>
+  <rect x="0" y="0" width="${W2}" height="${H2}" rx="60" fill="#1E1E20"/>
+  <g transform="translate(${bz} ${bz})" clip-path="url(#pscreen)">
+    <rect x="0" y="0" width="${w}" height="${h}" fill="${C.bg}"/>
+    ${content}
+    <rect x="${w / 2 - 62}" y="11" width="124" height="36" rx="18" fill="#000"/>
+    ${text(46, 36, '9:41', { size: 16, weight: 650 })}
+    ${rect(w - 62, 25, 26, 12, { rx: 3.5, stroke: C.ink, sw: 1.2 })}${rect(w - 60, 27, 20, 8, { rx: 2, fill: C.ink })}
+    <rect x="${w / 2 - 70}" y="${h - 12}" width="140" height="5" rx="2.5" fill="#1C1B19"/>
+  </g>
+</svg>`;
+}
+
+export function iphone() {
+  const w = 393, h = 852;
+  const it = (v) => `<tspan font-style="italic">${v}</tspan>`;
+  const sb = (b, v) => `${it(b)}<tspan font-size="10" dy="3" font-style="italic">${v}</tspan><tspan dy="-3">&#8202;</tspan>`;
+  // A: review (revealed, no writing area)
+  let a = '';
+  a += icon('close', 18, 64, 24, C.accent, 2.2);
+  a += text(w / 2, 82, '18 / 64', { size: 15, weight: 650, anchor: 'middle', cls: 'rnd' });
+  a += icon('undo', w - 44, 64, 24, C.accent);
+  a += rect(18, 100, w - 36, 5, { rx: 2.5, fill: C.surface2 }) + rect(18, 100, (w - 36) * 18 / 64, 5, { rx: 2.5, fill: C.accent });
+  a += rect(12, 118, w - 24, 600, { rx: 22, fill: '#fff', filter: 'sh' });
+  a += chip(28, 134, 'Linear Algebra · Theorem', { dot: C.indigo, fill: '#EEF0FE', color: '#3A47B8', size: 11.5, h: 24 }).svg;
+  a += text(28, 186, 'Statement and Proof of the', { cls: 'serif', size: 20 });
+  a += text(28, 212, 'Cayley–Hamilton Theorem', { cls: 'serif', size: 20 });
+  a += line(24, 232, w - 24, 232, C.line);
+  let cx = 24;
+  for (const [t, on] of [['Motivation'], ['Statement', true], ['Proof'], ['Intuition']]) {
+    const c = chip(cx, 244, t, { fill: on ? C.ink : C.surface2, color: on ? '#fff' : C.ink2, size: 11, h: 24, pad: 8 });
+    a += c.svg; cx += c.w + 5;
+  }
+  const P = (y, s, o = {}) => text(28, y, s, { cls: 'serif', size: 14.5, raw: true, ...o });
+  let y = 300;
+  a += P(y, '<tspan font-weight="700">2. Statement:</tspan>'); y += 22;
+  a += P(y, `Let ${it('V')} be an ${it('n')}-dimensional vector space`); y += 21;
+  a += P(y, `over ${it('F')} and ${it('α')} ∈ End(${it('V')}). Then`); y += 34;
+  a += text(w / 2, y, '', {}); a += text(w / 2, y, `${sb('χ', 'α')}(${it('α')}) = 0.`, { cls: 'serif', size: 18, raw: true, anchor: 'middle' }); y += 36;
+  a += P(y, '<tspan font-weight="700">3. Proof (F = ℂ):</tspan> choose a basis in'); y += 21;
+  a += P(y, `which ${it('α')} is upper triangular, diagonal`); y += 21;
+  a += P(y, `${sb('λ', '1')}, …, ${sb('λ', 'n')}, and put ${sb('U', 'i')} = ⟨${sb('v', '1')}, …, ${sb('v', 'i')}⟩.`); y += 25;
+  a += P(y, 'Upper-triangularity says'); y += 32;
+  a += text(w / 2, y, `(${it('α')} − ${sb('λ', 'i')}${it('ι')})${sb('U', 'i')} ⊆ ${sb('U', 'i−1')},`, { cls: 'serif', size: 16, raw: true, anchor: 'middle' }); y += 32;
+  a += P(y, 'so applying the factors in turn shrinks', { opacity: 0.8 }); y += 21;
+  a += P(y, `${it('V')} to 0 …`, { opacity: 0.5 });
+  a += rect(w - 22, 290, 3, 120, { rx: 1.5, fill: '#D3CEC5' });
+  // action pills
+  a += rect(24, 648, 116, 36, { rx: 18, fill: C.accent }) + sparkle(36, 657, 16, '#fff') + text(58, 671, 'Discuss', { size: 14, weight: 650, fill: '#fff' });
+  a += rect(148, 648, 100, 36, { rx: 18, fill: '#fff', stroke: C.line }) + icon('source', 158, 656, 18, C.accent) + text(180, 671, 'Source', { size: 14, fill: C.accent });
+  a += icon('flag', w - 52, 655, 22, C.ink3);
+  // grade buttons
+  const gs = [['Again', '<10m', C.again], ['Hard', '2d', C.hard], ['Good', '6d', C.good], ['Easy', '14d', C.easy]];
+  const bw = (w - 24 - 18) / 4;
+  gs.forEach(([g, iv, col], i) => {
+    const x = 12 + i * (bw + 6);
+    const dom = g === 'Again' || g === 'Good';
+    a += rect(x, 738, bw, 64, { rx: 16, fill: dom ? col : '#fff', stroke: dom ? null : C.line });
+    a += text(x + bw / 2, 766, g, { size: 16, weight: 700, fill: dom ? '#fff' : col, anchor: 'middle' });
+    a += text(x + bw / 2, 786, iv, { size: 12, weight: 600, fill: dom ? 'rgba(255,255,255,0.9)' : C.ink2, anchor: 'middle', cls: 'rnd' });
+  });
+
+  // B: thread
+  let b = '';
+  b += icon('chevL', 14, 62, 26, C.accent, 2.2);
+  b += text(w / 2, 74, 'Cayley–Hamilton', { size: 16, weight: 700, anchor: 'middle' });
+  b += text(w / 2, 93, 'Discuss · Claude Opus 5.5', { size: 12, fill: C.ink2, anchor: 'middle' });
+  b += line(0, 110, w, 110, C.line);
+  b += rect(70, 126, w - 86, 100, { rx: 18, fill: C.accentSoft });
+  b += rect(84, 138, w - 114, 28, { rx: 8, fill: '#fff' });
+  b += text(96, 157, '“ (α − λᵢι)Uᵢ ⊆ Uᵢ₋₁ ”', { size: 13, cls: 'serif', italic: true, fill: C.ink2 });
+  b += text(84, 190, 'Why does this hold? I don’t see', { size: 14, fill: '#0F4D46' });
+  b += text(84, 209, 'where the vᵢ term goes.', { size: 14, fill: '#0F4D46' });
+  let ty = 254;
+  for (const l of [
+    'In this basis αvᵢ = λᵢvᵢ + (terms in',
+    'v₁, …, vᵢ₋₁): that is what upper',
+    'triangular means, column by column.',
+    'Subtracting λᵢvᵢ removes exactly the',
+    'vᵢ-component, and Uᵢ₋₁ is preserved.',
+    'Want me to add this step to the card?',
+  ]) { b += text(20, ty, l, { size: 14.5, cls: 'serif' }); ty += 21; }
+  ty += 12;
+  b += rect(16, ty, w - 32, 128, { rx: 16, fill: '#fff', stroke: '#CDE7E2', sw: 1.5 });
+  b += text(30, ty + 24, 'PROPOSED CHANGE', { size: 10.5, weight: 700, fill: C.accent, ls: 0.8 });
+  b += text(w - 30, ty + 24, 'Additions only ✓', { size: 11.5, weight: 700, fill: C.good, anchor: 'end' });
+  b += rect(30, ty + 36, w - 60, 40, { rx: 8, fill: '#E3F5EA' });
+  b += text(40, ty + 52, '+ Since α is upper triangular, αvᵢ = λᵢvᵢ', { size: 12, cls: 'serif', fill: '#1F6B43' });
+  b += text(40, ty + 68, '  + (terms in v₁, …, vᵢ₋₁), so …', { size: 12, cls: 'serif', fill: '#1F6B43' });
+  b += button(30, ty + 84, 100, 34, 'Apply', { size: 14 });
+  b += button(140, ty + 84, 130, 34, 'Keep talking', { fill: '#fff', color: C.accent, size: 14, stroke: C.line });
+  ty += 150;
+  b += rect(150, ty, w - 166, 46, { rx: 18, fill: C.accentSoft });
+  b += text(166, ty + 28, 'Yes, and give an example.', { size: 14, fill: '#0F4D46' });
+  ty += 74;
+  b += circle(26, ty - 5, 4, C.accent);
+  b += text(38, ty, 'Thinking · checking LA notes p. 61 …', { size: 12.5, fill: C.ink2, italic: true });
+  b += rect(12, h - 92, w - 24, 50, { rx: 25, fill: C.surface2 });
+  b += text(32, h - 61, 'Reply…', { size: 15, fill: C.ink3 });
+  b += icon('mic', w - 98, h - 79, 22, C.ink2);
+  b += circle(w - 44, h - 67, 18, C.accent);
+  b += icon('send', w - 54, h - 77, 20, '#fff', 2);
+
+  const devA = phone(w, h, a, 'iPhone: review');
+  const devB = phone(w, h, b, 'iPhone: card thread');
+  const inner = (svg, id) => svg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '').replace(/id="pscreen"/g, `id="pscreen-${id}"`).replace(/url\(#pscreen\)/g, `url(#pscreen-${id})`);
+  const DW = w + 24, DH = h + 24, gap = 70, total = DW * 2 + gap;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${DH + 60}" width="${total}" height="${DH + 60}" role="img" aria-label="iPhone companion">
+  <title>MathsMaster: iPhone companion (review and card thread)</title>
+  <rect width="100%" height="100%" fill="#FFFFFF"/>
+  <g>${inner(devA, 'a')}</g>
+  <g transform="translate(${DW + gap} 0)">${inner(devB, 'b')}</g>
+  <text x="${DW / 2}" y="${DH + 42}" text-anchor="middle" font-family="-apple-system,'Segoe UI',Ubuntu,Arial,sans-serif" font-size="18" fill="#6B6862">Review: tap to reveal, no writing area</text>
+  <text x="${DW + gap + DW / 2}" y="${DH + 42}" text-anchor="middle" font-family="-apple-system,'Segoe UI',Ubuntu,Arial,sans-serif" font-size="18" fill="#6B6862">Card thread: ask, get proposals, keep talking</text>
 </svg>`;
 }
