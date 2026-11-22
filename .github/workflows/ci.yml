@@ -60,6 +60,36 @@ jobs:
           path: ${{ runner.temp }}/ipa/MathsMaster.ipa
           retention-days: 14
 
+  compile-matrix:
+    name: Compile with every Xcode 26.x (Debug, like Playgrounds)
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      # Swift Playground 4.7 ships an older Swift 6.x than the newest Xcode 26.x, and builds Debug.
+      - name: Compile app sources with each toolchain
+        run: ci/compile-matrix.sh
+
+  launch-smoke:
+    name: Launch smoke test (Debug, iPad simulator)
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode 26.x
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
+      - name: Build, launch twice, check for crashes
+        run: ci/launch-smoke.sh "$RUNNER_TEMP/smoke"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: launch-smoke
+          path: ${{ runner.temp }}/smoke
+          retention-days: 14
+
   core-tests:
     name: Core unit tests (swift test)
     runs-on: macos-26

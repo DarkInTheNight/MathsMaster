@@ -52,6 +52,11 @@ final class LibraryStore {
     // MARK: Opening
 
     func start() async {
+        // CI launch smoke test only: open a fixture library without the folder picker.
+        if let path = ProcessInfo.processInfo.environment["MM_SMOKE_LIBRARY"], !path.isEmpty {
+            await open(URL(fileURLWithPath: path, isDirectory: true))
+            return
+        }
         if let url = location.resolve() {
             await open(url)
         } else {

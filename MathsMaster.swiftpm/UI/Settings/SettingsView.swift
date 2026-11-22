@@ -36,6 +36,7 @@ struct SettingsView: View {
                 LabeledContent("Bundle", value: Bundle.main.bundleIdentifier ?? "—")
                 LabeledContent("Version", value: appVersion)
                 Button("Diagnostics") { showingDiagnostics = true }
+                NavigationLink("Keyboard test") { KeyboardTestView() }
             }
         }
         .navigationTitle("Settings")
