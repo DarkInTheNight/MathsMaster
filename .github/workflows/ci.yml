@@ -69,13 +69,6 @@ jobs:
       # Swift Playground 4.7 ships an older Swift 6.x than the newest Xcode 26.x, and builds Debug.
       - name: Compile app sources with each toolchain
         run: ci/compile-matrix.sh
-      - name: Swift 6 language mode (diagnostic only)
-        continue-on-error: true
-        run: |
-          export DEVELOPER_DIR=$(ls -d /Applications/Xcode_26*.app | sort -V | head -1)/Contents/Developer
-          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
-          find MathsMaster.swiftpm -name '*.swift' ! -name Package.swift -print0 | xargs -0 xcrun swiftc -typecheck -parse-as-library -module-name AppModule \
-            -target arm64-apple-ios26.0 -sdk "$SDK" -swift-version 6 2>&1 | grep "error:" | head -40
 
   launch-smoke:
     name: Launch smoke test (Debug, iPad simulator)

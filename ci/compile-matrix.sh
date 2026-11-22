@@ -8,10 +8,13 @@ SOURCES=()
 while IFS= read -r f; do SOURCES+=("$f"); done < <(find "$ROOT/MathsMaster.swiftpm" -name '*.swift' ! -name Package.swift ! -path '*/.swiftpm/*' | sort)
 echo "${#SOURCES[@]} source files"
 FAIL=0
+SEEN=""
 for X in $(ls -d /Applications/Xcode_26*.app | sort -V); do
   export DEVELOPER_DIR="$X/Contents/Developer"
   SDK=$(xcrun --sdk iphoneos --show-sdk-path 2>/dev/null) || { echo "$X: no iOS SDK, skipped"; continue; }
-  V=$(xcrun swiftc --version 2>&1 | head -1)
+  V=$(xcrun swiftc --version 2>&1 | grep -o "Apple Swift version [0-9.]*")
+  case " $SEEN " in *" $V|$(basename "$SDK") "*) continue;; esac   # same compiler and SDK already checked
+  SEEN="$SEEN $V|$(basename "$SDK")"
   echo "::group::$(basename "$X") · $(basename "$SDK") · $V"
   LOG="${RUNNER_TEMP:-/tmp}/compile.log"
   if xcrun swiftc -c -wmo -parse-as-library -module-name AppModule -Onone -DDEBUG \
