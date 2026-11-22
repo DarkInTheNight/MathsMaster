@@ -428,7 +428,7 @@ Swift Charts, on one scrolling page, filterable by course:
 ### 5.4 Your card guidelines in the app
 
 - **Where they live:** `MathsMaster/AI/card-guidelines.md` in your library. You edit them in *Settings → AI → Card guidelines*, and they're synced and backed up. Each course can add `Courses/<course>/ai-instructions.md`, e.g. notes on handwritten material (guidelines §7.2). **They stay out of the public repo.**
-- **Kept verbatim.** The app layers a short **app adapter** on top (in the repo, `Resources/Prompts/app-adapter.md`). It only overrides the delivery details, so you keep editing a single document you already know.
+- **Kept verbatim.** The VPS layers a short **app adapter** on top (in the repo, `server/mathsmaster_server/claude/prompts/app-adapter.md`; the VPS builds every prompt, so the adapter lives with it). It only overrides the delivery details, so you keep editing a single document you already know.
 
 | Guidelines section | In the app |
 |---|---|
@@ -659,14 +659,14 @@ MathsMaster/                               ← the folder you pick (iCloud Drive
 
 ### 7.7 The VPS: backup, Anki import and Claude (Phases 2–3)
 
-A small HTTPS service (behind Caddy) with a per-device bearer token:
+A small HTTPS service (behind Caddy or Tailscale) with a per-device bearer token. It lives in `server/`; the full contract the app codes against is [`server/API.md`](../server/API.md), and the deploy guide is [`server/README.md`](../server/README.md).
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /v1/manifest` · `PUT/GET /v1/files/{path}` | **Backup mirror**: the app uploads changed files (content hash; debounced; optionally Wi-Fi only). The server takes nightly snapshots (e.g. restic, 90 days). *Settings → Backups → Restore* always restores into a **new** folder, never over your library. |
-| `POST /v1/imports` · `GET /v1/imports/{id}` | **Anki import** (§4.8): upload an `.apkg`, get back cards + review history for the Inbox. |
-| `POST /v1/jobs` · `GET /v1/jobs/{id}` | **Claude batch jobs** (§5.5): card generation and deck enhancement over the mirrored course files. The result (cards JSON + report) goes into `Inbox/jobs/`. |
-| `POST /v1/threads/{id}` (SSE stream) | **Card and course threads** (§5.3): one resumable Claude Code session per thread, with the reply streamed. |
+| `GET /v1/manifest` · `PUT/GET/DELETE /v1/files/{path}` | **Backup mirror**: the app uploads changed files (content hash; debounced; optionally Wi-Fi only). The server takes nightly snapshots (e.g. restic, 90 days). *Settings → Backups → Restore* always restores into a **new** folder, never over your library. |
+| `POST /v1/imports` · `GET /v1/imports/{id}` (+ `/result`, `/media/{name}`) | **Anki import** (§4.8): upload an `.apkg`, get back cards + review history for the Inbox. |
+| `POST /v1/jobs` · `GET /v1/jobs/{id}` · `POST /v1/jobs/{id}/cancel` | **Claude batch jobs** (§5.5): card generation, deck enhancement, and one-shot explain / check my attempt / transcribe over the mirrored course files. The result (cards JSON + report) goes into `Inbox/jobs/`. |
+| `POST /v1/threads/{id}` (SSE stream) · `GET /v1/threads/{id}` | **Card and course threads** (§5.3): one resumable Claude Code session per thread, with the reply streamed. A dropped connection doesn't lose the reply. |
 | `POST /v1/fsrs/optimize` | (Phase 5) runs the FSRS optimiser on uploaded review logs. |
 
 The VPS is deliberately **not** the live sync: iCloud Drive already syncs files between the two app copies and the PC, and works offline. Because the mirror stays current, it's also what Claude reads when it needs your notes (§5.5).

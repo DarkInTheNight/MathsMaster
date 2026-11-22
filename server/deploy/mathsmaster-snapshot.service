@@ -1,0 +1,12 @@
+# /etc/systemd/system/mathsmaster-snapshot.service
+# Nightly restic snapshot of the backup mirror, keeping 90 days (DESIGN.md §7.7).
+# Needs /etc/mathsmaster/restic.env with RESTIC_REPOSITORY and RESTIC_PASSWORD_FILE.
+[Unit]
+Description=Snapshot the MathsMaster mirror with restic
+
+[Service]
+Type=oneshot
+User=mathsmaster
+EnvironmentFile=/etc/mathsmaster/restic.env
+ExecStart=/usr/bin/restic backup --tag mathsmaster /var/lib/mathsmaster/mirror
+ExecStartPost=/usr/bin/restic forget --tag mathsmaster --keep-daily 90 --prune
