@@ -147,9 +147,10 @@ struct CardWebView: UIViewRepresentable {
         var c = document.getElementById('c');
         c.innerHTML = html;
         fixMedia(c);
+        var tries = 0;
         var go = function () {
           if (window.MathJax && MathJax.typesetPromise) { MathJax.typesetClear && MathJax.typesetClear([c]); MathJax.typesetPromise([c]); }
-          else setTimeout(go, 50);
+          else if (tries++ < 100) setTimeout(go, 50);   // no MathJax bundled: leave the plain text
         };
         go();
       }

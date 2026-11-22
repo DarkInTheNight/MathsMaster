@@ -36,10 +36,7 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "AppModule",
-            path: ".",
-            resources: [
-                .copy("Resources/MathJax")
-            ]
+            path: "."
         )
     ],
     swiftLanguageModes: [.v5]
