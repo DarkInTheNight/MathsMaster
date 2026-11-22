@@ -4,6 +4,15 @@ import WebKit
 /// Serves the bundled MathJax and a course's `cards-media/` over `mm://app/…`, so cards render offline
 /// and `<img src="name">` from imported Anki cards resolves without opening file access.
 final class CardSchemeHandler: NSObject, WKURLSchemeHandler {
+    /// Where the bundled MathJax ended up (found by searching the app bundle, so it works however resources are laid out).
+    static let mathJaxURL: URL? = {
+        if let direct = Bundle.main.url(forResource: "tex-svg-full", withExtension: "js") { return direct }
+        let e = FileManager.default.enumerator(at: Bundle.main.bundleURL, includingPropertiesForKeys: nil)
+        while let url = e?.nextObject() as? URL {
+            if url.lastPathComponent == "tex-svg-full.js" { return url }
+        }
+        return nil
+    }()
     var mediaFolder: URL?
 
     func webView(_ webView: WKWebView, start urlSchemeTask: WKURLSchemeTask) {
@@ -12,13 +21,7 @@ final class CardSchemeHandler: NSObject, WKURLSchemeHandler {
         var file: URL?
         var mime = "application/octet-stream"
         if path == "/mathjax.js" {
-            for dir in [nil, "MathJax", "Resources/MathJax"] as [String?] {
-                if let found = Bundle.module.url(forResource: "tex-svg-full", withExtension: "js", subdirectory: dir)
-                    ?? Bundle.main.url(forResource: "tex-svg-full", withExtension: "js", subdirectory: dir) {
-                    file = found
-                    break
-                }
-            }
+            file = CardSchemeHandler.mathJaxURL
             mime = "text/javascript"
         } else if path.hasPrefix("/media/"), let folder = mediaFolder {
             let name = String(path.dropFirst("/media/".count))
