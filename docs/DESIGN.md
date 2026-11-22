@@ -1,6 +1,6 @@
-# MathsMaster: design plan (v1)
+# MathsMaster: design plan (v2)
 
-> **Status:** proposal for the owner to review · **Date:** 22 Nov 2026 (Michaelmas, week 7)\
+> **Status:** v2, revised after the owner's review (decisions in §10) · **Date:** 22 Nov 2026 (Michaelmas, week 7)\
 > **Scope:** layout, UX, data and platform decisions. There's no app code yet. Every later task builds on this document; if a task needs to depart from it, change this file in the same PR.\
 > **Mockups:** [`docs/mockups/`](mockups/). The rendered version with the mockups inline is `docs/mockups/design-plan.html`.
 
@@ -18,25 +18,26 @@ MathsMaster is a native SwiftUI iPad app: the single place for a Cambridge Part 
 | 4 | Editor | **One page engine for everything.** A document is a stack of pages. Each page has a *background* (a PDF page or a template) and an *ink layer* (PencilKit). | Lecture notes, example sheets and notebooks behave the same way, and you can insert blank pages into a PDF or PDF pages into a notebook. |
 | 5 | Ink | **PencilKit `PKCanvasView` + the system `PKToolPicker`**, Pencil-only drawing by default, and the canvas kept in light style on white paper. | This is the same ink Apple Notes uses, and it brings squeeze, double-tap, hover and new tools (e.g. the reed pen in iPadOS 26) for free. |
 | 6 | Originals | **PDFs are never modified.** Ink lives in a sidecar next to the PDF. Exports produce a new, flattened PDF. | Lecturers' PDFs stay pristine and replaceable, and sync stays cheap. |
-| 7 | Cards | **Markdown + LaTeX text, rendered with KaTeX**, with optional ink fields and image-region cards. **One deck per course + one global queue**, and no nested decks. | Typeset cards look like lecture notes. Region cards keep the link to your handwriting. Filters do the job of sub-decks without the admin. |
-| 8 | Review | **Write first, then reveal.** Each card has a Pencil scratch area; the answer slides in under your attempt. FSRS-6, four grade buttons showing the next intervals. | Active recall by writing is how maths is examined. |
-| 9 | AI | **AI is a verb on your content, not a chat app.** Everything AI makes lands in an **Inbox** for you to accept or reject. Instant: Gemini (key in the Keychain). Batch notes→cards: Claude Code on the **VPS** (not GitHub Actions, because the repo is public). | Quality control, privacy, and no credentials in the app. |
+| 7 | Cards | **Anki-compatible HTML + MathJax** (your existing format), rendered with bundled MathJax. Big, self-contained "macroscopic" cards as your guidelines describe. **One deck per course + one global queue**, and no nested decks. Your Anki decks are imported with their review history. | Your decks come in unchanged, your card guidelines apply almost as written, and nothing is locked in. |
+| 8 | Review | **Write first, then reveal.** Below the front is a big writing space that grows as you write, so whole proofs fit. Revealing opens the answer **beside your attempt** to compare. FSRS-6, four grade buttons showing the next intervals. | Active recall by writing out proofs is how maths is examined. |
+| 9 | AI | **Claude Opus 5.5 on your VPS for everything** (owner decision: no Gemini). Whole-course context plus your card guidelines, every time. You **talk to it**: per-card threads with proposals you can apply or argue with. Everything generated lands in an **Inbox** first. | Hard maths needs a frontier model working agentically. No AI credentials in the app; nothing in GitHub Actions (public repo). |
 | 10 | Storage | **Files are the truth**: a human-readable folder in iCloud Drive that you pick once (security-scoped bookmark). Databases, thumbnails and the search index are disposable caches. | Works without entitlements, survives app reinstalls, is shared by the Playgrounds and SideStore copies, and is inspectable in the Files app and on the PC. |
 | 11 | Conflicts | **Append-only review logs per app install; per-page ink files; per-card timestamps.** | Two app copies (or two devices) can never corrupt each other's work. |
-| 12 | VPS | **Backup mirror + AI job runner**, not the live sync (that's iCloud's job). | Keeps the app simple and offline-first. The VPS adds safety and the batch AI. |
-| 13 | Look | **Quiet paper-and-ink UI.** SF Pro for the interface, Computer Modern (KaTeX) for maths content, one teal accent plus a colour per course, Liquid Glass only for floating controls. | Content first. It should look at home on iPadOS 26. |
+| 12 | VPS | **Backup mirror + the Claude runtime + the Anki importer.** It isn't the live sync; iCloud does that. | Offline-first app; the mirror also gives Claude your latest notes without per-request uploads. |
+| 13 | Look | **Quiet paper-and-ink UI.** SF Pro for the interface, the LaTeX look (MathJax + Latin Modern) for card content, one teal accent plus a colour per course, Liquid Glass only for floating controls. | Content first. It should look at home on iPadOS 26. |
 | 14 | Platform | **iPadOS 26 deployment target, Swift 6, built with the iOS 26 SDK**, the SDK that ships in Swift Playground 4.7. CI uses Xcode 26.x to match. | The newest APIs that the iPad can actually compile. |
-| 15 | MVP | **Phase 1 = courses + writing on PDFs + notebooks + print**, runnable from Playgrounds. Flashcards follow straight after (Phase 2, aimed at Christmas-vacation revision). | Ink is both the core input and the riskiest part, so it gets proven first. |
+| 15 | MVP | **Phase 1 = courses + writing on PDFs + notebooks + print**, runnable from Playgrounds. Flashcards and your Anki decks follow straight after (Phase 2), then Claude (Phase 3) and the iPhone companion (Phase 4). | Ink is both the core input and the riskiest part, so it gets proven first. |
+| 16 | iPhone | **A companion app** from the same code (SideStore install). It reviews cards without writing, reads everything, and does threads and Inbox triage. | The degree hub belongs in your pocket too; proofs get written on paper there. |
 
 ---
 
 ## 1. Who it's for, and the principles
 
-**The user:** a second-year Cambridge maths student. Michaelmas has about 5 courses (e.g. Linear Algebra, Analysis & Topology, Methods, Quantum Mechanics, Markov Chains), Lent has about 6 more, then Tripos in late May/June. Each 24-lecture course has a set of lecture notes (usually one long LaTeX PDF), about 4 example sheets with supervisions, and lots of handwritten working. The device is an iPad Air (M4, 2026) with an Apple Pencil: 11″ or 13″, 60 Hz display, Pencil hover supported.
+**The user:** a second-year Cambridge maths student. Michaelmas has about 5 courses (e.g. Linear Algebra, Analysis & Topology, Methods, Quantum Mechanics, Markov Chains), Lent has about 6 more, then Tripos in late May/June. Each 24-lecture course has a set of lecture notes (usually one long LaTeX PDF), about 4 example sheets with supervisions, and lots of handwritten working. They already have **Anki decks for several courses**, made by AI agents following a detailed set of **card guidelines** (§5.4). The main device is an iPad Air (M4, 2026) with an Apple Pencil: 11″ or 13″, 60 Hz display, Pencil hover supported. An iPhone is used for review on the go (§6.10).
 
 **Principles.** Every later decision should be checked against these:
 
-1. **Ink first.** The Pencil is the primary input everywhere it makes sense: notes, answers, card scratch pads, and even writing LaTeX (AI transcribes it). Nothing may make ink feel worse than Apple Notes.
+1. **Ink first.** The Pencil is the primary input everywhere it makes sense: notes, answers, the writing space on every card, and even maths for typed card text (Claude transcribes it). Nothing may make ink feel worse than Apple Notes.
 2. **One home per course.** Anything you own for a course is one tap from its page. There's no hunting through folders.
 3. **Files are the truth.** Your work is ordinary files in a folder you can see. The app can be deleted, rebuilt or replaced, and nothing is lost.
 4. **AI proposes, you decide.** AI never silently changes your notes or cards. Its output is a suggestion with *Accept / Edit / Reject*.
@@ -44,7 +45,7 @@ MathsMaster is a native SwiftUI iPad app: the single place for a Cambridge Part 
 6. **Offline by default.** Everything except AI works on a train with no signal.
 7. **Looks like a maths book.** Typeset content uses the fonts of a LaTeX document, with calm colours and nothing gamified for its own sake.
 
-**Non-goals for v1:** collaboration or sharing, a web app, typed rich-text notes (handwriting is the notes medium; typed text lives on cards), PDF forms and signatures, and the Anki sync protocol. A one-off Anki import is a possible later item (see the open questions).
+**Non-goals for v1:** collaboration or sharing, a web app, typed rich-text notes (handwriting is the notes medium; typed text lives on cards), PDF forms and signatures, and live two-way Anki sync. (A one-off Anki import with review history *is* in scope: §4.8.)
 
 ---
 
@@ -134,10 +135,10 @@ What gets indexed (all on device, in a rebuildable cache):
 | Source | How | Quality |
 |---|---|---|
 | Titles, tags, bookmarks | direct | perfect |
-| Card text | direct (Markdown/LaTeX source) | perfect |
+| Card text | direct (HTML stripped to text; MathJax source kept) | perfect |
 | PDF text | PDFKit `page.string` | good for prose; maths in LaTeX-generated PDFs extracts as garbage, so we don't rely on it for formulas |
 | Handwriting | Vision text recognition on rendered ink, per page, re-run when the page's ink changes; keeps bounding boxes for highlighting | good for words ("compact", "Sylow"), poor for symbols |
-| AI transcripts | when a page or region is transcribed to LaTeX (§5), the transcript is indexed | good for maths; only covers pages AI has seen |
+| AI transcripts | when Claude transcribes a page or region (§5), the transcript is indexed | good for maths; only covers pages AI has seen |
 
 Extra: **Study these.** Any card-search result set can start a review session (custom study), e.g. search `#eigenvalues` → *Review 14 cards*.
 
@@ -256,10 +257,11 @@ An example sheet is the most-used document during term, so it gets a dedicated l
 
 **Decision:** cards can point at a place, and places show their cards.
 
-- **Making one:** the *Region → card* tool, or lasso → *Make card*. Draw a rectangle over a theorem in the lecture notes or over your handwritten working. A sheet opens with three options:
+- **Making one:** the *Region → card* tool, or lasso → *Make cards*. Draw a rectangle over a theorem in the lecture notes or over your handwritten working. A sheet opens with these options:
   - **Image card:** the region becomes the card front or back (a snapshot at 2×).
   - **Occlusion card** (Phase 5): draw masks over parts of the region, one card per mask.
-  - **Transcribe** ✨: AI turns the region into Markdown + LaTeX and pre-fills a typed card, with the image kept as a fallback.
+  - **Transcribe** ✨: Claude turns the region into HTML + MathJax and pre-fills a typed card, with the image kept as a fallback.
+  - **Ask Claude about this** ✨: opens a thread (§5.3) with the region attached.
 - **Anchor:** `{documentID, pageID, rect}` in page coordinates, so it survives zoom, reflow and renames.
 - **On the page:** a small **card badge** in the margin beside each anchored rect (*🂠 2*). Tap it to preview those cards, edit them, or review them now.
 - **On the card:** a **Source** chip (*Linear Algebra notes · p. 61*). Tapping it opens the editor at that page with the rect briefly highlighted, and *Back* returns to the review.
@@ -278,128 +280,185 @@ An example sheet is the most-used document during term, so it gets a dedicated l
 
 ## 4. Flashcards
 
-### 4.1 Card model and types
+### 4.1 What a card is
+
+Your Anki decks and your card guidelines already define the shape. Cards are **big and self-contained ("macroscopic")**: definition, theorem, complete proof, examples and intuition on one card. They're written as **HTML with MathJax maths**, sometimes with inline SVG diagrams. **The app adopts that format natively** rather than inventing its own. Your existing cards import unchanged, the guidelines need almost no adaptation (§5.4), and anything made in the app can go back to Anki.
 
 ```
 Card
-  id, courseID (= deck), kind, label
-  front, back, extra      Markdown + LaTeX ($…$ inline, $$…$$ display)
-  frontInk?, backInk?     optional PencilKit drawings (handwritten sides)
-  image?                  region snapshot (image and occlusion cards)
-  masks?                  occlusion rects (Phase 5)
-  source?                 anchor {documentID, pageID, rect?}
-  lecture?                integer, e.g. 16 (filled automatically from bookmarks when made from a page)
-  tags[], flagged, suspended
-  origin                  you | gemini | claude (+ job ID)
-  createdAt, updatedAt, deletedAt?   (tombstones for sync)
+  id, courseID (= deck)
+  front          plain text + MathJax  \( … \)  \[ … \]
+  back           HTML subset + MathJax + inline <svg>   (guidelines §5)
+  frontInk?, backInk?   optional handwritten sides (PencilKit)
+  image?         region snapshot (image cards made from your notes)
+  source?        anchor {documentID, pageID, rect?}
+  lecture?, tags[], flagged, suspended
+  label          Definition · Theorem · Practice · Synthesis · Other   (derived from the front)
+  origin         you | claude (+ job / thread ID) | anki (+ Anki note id and guid)
+  revisions[]    earlier versions: who changed what, when (every AI edit is reversible)
+  createdAt, updatedAt, deletedAt?
 ```
 
-- **Kinds:** *Basic* · *Basic + reversed* (definitions both ways) · *Cloze* (`{{c1::…}}`) · *Image* (a region from notes) · *Occlusion* (Phase 5).
-- **Labels** (maths-specific, for colour and filtering, with no behaviour of their own): *Definition · Theorem · Proof idea · Example / Counterexample · Formula · Technique*. The AI is asked to produce these, and the review screen shows them as a small chip.
-- **Handwriting on cards: yes, but typed is primary.** Typed LaTeX is searchable, editable by AI and scales to any size. Ink sides exist for diagrams and for when you can't be bothered to typeset; AI can transcribe them later. Image cards keep a direct link to your notes.
+- **Allowed HTML** is exactly the guidelines' subset: `<b> <i> <br> <ul> <li>` plus inline `<svg>`. A sanitiser strips everything else (scripts, styles, event handlers), so a malformed card can't break the app.
+- **Rendering: MathJax 3, bundled for offline use,** in a `WKWebView`. It's the engine Anki uses, so cards render exactly as they did there (KaTeX is faster but rejects some MathJax-isms). The output is SVG, so maths stays crisp at any zoom and takes the text colour. Diagrams drawn with `currentColor`, as your guidelines already require, work in dark mode automatically. Prose is set in Latin Modern (bundled), so text and maths match like a LaTeX document.
+- **Sections:** card backs use the guidelines' numbered bold headers (`<b>1. Motivation:</b>`, `<b>3. Proof:</b>`, `<b>Intuition:</b>`). The app detects these and shows **section chips** (*Motivation · Statement · Proof · Example · Intuition*) at the top of the answer, to jump around long cards.
+- **Labels** come from the front patterns in the guidelines: *"Definition of …"* → Definition, *"Statement and Proof of …"* → Theorem, *"Practice: …"* → Practice, and synthesis cards → Synthesis.
+- **Handwriting on cards:** typed cards (HTML + MathJax) are primary, because Claude can read, check and edit them. Ink sides and image cards exist for diagrams and quick capture.
 
 ### 4.2 Decks and queues
 
 - **One deck per course**, and nothing nested. Where you might want sub-decks, use filters instead: *lectures 1–8*, *label = Theorem*, *tag = #compactness*, *flagged*.
-- **The global queue** (Today → *Start review*, Cards → *Review all*) **interleaves courses**: learning cards that are due come first, then reviews ordered by lowest retrievability, round-robin across courses so that you never get 40 Methods cards in a row (interleaving helps learning), with new cards spread evenly through the session.
-- **The queue is term-aware.** New cards are introduced for **current-term courses**. Past-term courses get reviews only, unless you explicitly *Learn new* in them, so the Christmas vacation doesn't flood you with new Michaelmas cards next to Lent's.
+- **The global queue** (Today → *Start review*, Cards → *Review all*) **interleaves courses**. Due learning cards come first, then reviews ordered by lowest retrievability, round-robin across courses (interleaving helps learning), with new cards spread evenly through the session.
+- **The queue is term-aware.** New cards are introduced only for **current-term courses**. Past-term courses get reviews only, unless you explicitly choose *Learn new* in them.
 - **Custom study:** any filter or search result can start a session (*Review 14 cards tagged #eigenvalues*, *Cram lectures 13–16*). Cram sessions don't affect scheduling unless you choose to let them.
 
-### 4.3 Review flow
+### 4.3 Review flow (iPad)
 
-![Card review: write first, then reveal](mockups/04-review.svg)
+![Card review: a long handwritten attempt beside the revealed answer](mockups/04-review.svg)
 
-1. **The session opens full screen** (the sidebar slides away). The top bar shows × End · scope (*All courses*) · a thin progress bar · *New 3 · Learning 5 · Review 56* · ↶ Undo · ⋯.
-2. **The card** sits centred, at most 760 pt wide. It shows a course-colour chip and label (*Linear Algebra · Theorem · L19*), then the front, typeset at 26 pt.
-3. **The scratch area:** the rest of the card surface below the question is a Pencil canvas with the hint *Write your attempt*. Just start writing. It's cleared for the next card. *Write first* mode (a setting) hides the *Show answer* button until you've written something.
-4. **Reveal** (the *Show answer* button, Space, or a finger tap outside the scratch area): **the answer slides in below your attempt**, so you compare like with like. *Extra* (proof sketch, notes) starts collapsed. There's no 3D flip: maths answers need you to see the question and the answer together.
-5. **Grade:** four buttons in a glass bar, **Again · Hard · Good · Easy**, each showing the next interval (*<10m · 2d · 6d · 14d*). Again and Good are visually dominant (most reviews are one of the two). Keys 1–4; Space = Good after reveal. There are no swipe-to-grade gestures, because accidental grades are worse than one extra tap.
-6. **The side rail** (right of the card): **✨ Explain** (AI side panel, §5) · **↗ Source** (jumps to the page; *Back* returns) · **✎ Edit** (in-place editor; the session continues) · **⚑ Flag** · ⋯ (suspend, bury, delete, copy LaTeX).
-7. **The end card:** time spent, cards reviewed, retention today, the streak, *Review the 6 you failed again?*, and *What's due tomorrow*.
+1. **The session opens full screen.** The top bar has × End · scope (*All courses*) · a thin progress bar · *New 3 · Learning 5 · Review 56* · ↶ Undo · ⋯.
+2. **The front** is at the top, typeset (e.g. *Statement and Proof of the Cayley–Hamilton Theorem*).
+3. **Writing space:** everything below the front is open paper you write on with the Pencil and scroll with a finger. It **grows automatically**: another screen of space appears when you write near the bottom, so a long proof never runs out of room. Two-finger tap undoes. You can pick blank, dot or squared paper.
+4. **Reveal** (the *Show answer* button, Space, or a finger tap on the front):
+   - **Landscape (13″ and 11″): compare layout.** Your attempt slides to the left and the answer opens on the right. The two sides scroll independently, so you can check a long proof line by line.
+   - **Portrait:** the answer appears below your attempt, and a toggle switches to side by side.
+   - Section chips sit at the top of the answer.
+   - **Step reveal** (optional, off by default): reveal one section at a time. For example, check the statement, then attempt the proof before revealing it.
+5. **Grade** with the floating glass bar: **Again · Hard · Good · Easy**, each showing the next interval. It stays visible however far you've scrolled. Keys 1–4.
+6. **Actions on the answer:**
+   - **Discuss** opens the card's Claude thread beside it (§5.3).
+   - **Check my attempt:** Claude reads your handwritten attempt against the card and the course, and tells you what's right, what's missing and where the logic slips, before you grade.
+   - **Source** · **Edit** · ⚑ **Flag**.
+7. **Your attempt** is kept with the review if you used *Check* or *Discuss*, or tapped *Keep*; otherwise it's cleared. Kept attempts appear in the card's history (*"your attempt, 3 weeks ago"*).
+8. **The end card:** time spent, cards reviewed, retention today, the streak, *Review the 6 you failed again?*, and what's due tomorrow.
 
-Small things that matter: grading an image card zooms the region to fill the card; **undo** restores the previous card *and* its scratch ink; leaving mid-session keeps your place for an hour; every review records its duration (for stats; FSRS doesn't need it).
+Small things that matter: undo restores the previous card *and* your attempt; leaving mid-session keeps your place for an hour; every review records its duration.
 
 ### 4.4 Card editor
 
-![Card editor with live preview, and AI inbox triage](mockups/05-cards.svg)
+- **Most editing happens by talking to Claude** (§5.3). Direct editing is for quick fixes.
+- **Layout:** *Front* and *Back* source (HTML + MathJax, syntax-coloured) on the left, and a **live MathJax preview** on the right. On an 11″ in portrait they stack, with a preview toggle.
+- **The accessory bar** above the keyboard: `\( \)`, `\[ \]`, `<b></b>`, `<br><br>`, `<i></i>`, `\begin{aligned}`, `\blacksquare`, `&lt;`, plus your own snippets.
+- **Live lint:** the guidelines' delivery checks (§8.2) run as you type. They flag any `$`, any `**`, unbalanced `\( \)` / `\[ \]` / `\begin…\end` / braces / tags, a raw `<`, contextual numbering (*"Theorem 3.2"*, *"equation (5)"*) and references to other cards (*"previous card"*). Problems show inline, with a one-tap fix where possible.
+- **Write it** ✍︎: write a formula by hand and Claude transcribes it to MathJax at the cursor.
+- **Metadata row:** course, label, lecture, tags, source (with *Pick region…*).
 
-- **Layout:** fields on the left (*Front*, *Back*, *Extra*), a **live KaTeX preview** on the right (side by side on 13″ and landscape; stacked with a preview toggle on 11″ portrait).
-- **The LaTeX accessory bar** above the keyboard: `$ $`, `$$ $$`, `\mathbb{}`, `\forall`, `\exists`, `\to`, `\subseteq`, `^{}`, `_{}`, `\frac{}{}`, `\sum`, `\int`, `\begin{pmatrix}`, `cases`, plus your own snippets. Errors show inline in the preview (red source span) and never as a blank card.
-- **Write it** ✍︎: a Pencil pad that opens in place. Write the formula by hand, and ✨ transcribes it to LaTeX, inserts it at the cursor, and shows the rendering to confirm. Scribble in the text fields also works for plain words, for free.
-- **Metadata row:** course, kind, label, lecture, tags, source (with *Pick region…*).
-- **AI edit strip:** *"Ask AI to change this card…"* (§5).
+### 4.5 The Inbox
 
-### 4.5 The Inbox (AI triage)
+![AI inbox with a card thread](mockups/05-cards.svg)
 
-Everything AI generates arrives in the **Inbox**, grouped by job (*"Linear Algebra, lectures 13–16 · 18 cards"*). Nothing enters a deck until you accept it.
+Everything Claude generates or proposes lands here first, grouped by job (*"Linear Algebra, lectures 13–16"*).
 
-- Each card shows its rendered front and back, label, tags, source thumbnail and a **possible duplicate** warning (text similarity to existing cards in the deck).
-- Actions: **Accept** (A or →) · **Edit** (E) · **Reject** (R or ←) · **Accept all remaining**. Accepted cards go into the deck as *new*. Rejections are kept (for 30 days) to improve future prompts (*"don't make cards like these"*).
+- **The job header is Claude's report** (guidelines §8.3): what was added, **possible errors in the notes** (each linked to its page), **unclear handwriting** read as `[unclear in notes: read as …]` (each highlighted on its card), and anything it couldn't do.
+- **New cards** show the rendered card, its label and source, and a possible-duplicate warning. Actions: **Accept** · **Discuss** · **Edit** · **Reject** · **Accept all remaining**.
+- **Changes to existing cards** (e.g. *"enhance my Methods deck"*) appear as diffs with the inserted text highlighted. Each gets an **additions-only check** (guidelines §6.2): the app verifies that deleting exactly the inserted text gives back your original, character for character, and shows *Additions only ✓*. A change that rewords or removes any of your text gets a warning and needs an explicit tap.
+- **Edits always keep the card's ID and review history** (guidelines §6.8), and each one is stored as a revision you can undo.
 
 ### 4.6 Scheduling
 
-- **FSRS-6** with default parameters and **desired retention 0.90**. One learning step (10 min) and one relearning step (10 min); FSRS handles the rest, including same-day reviews. We vendor a Swift port of the open-source reference implementation as source (no dependency risk, §8).
-- **Card state is derived, not stored:** it's a fold over the append-only review log (§7.4). It's cached for speed and is always reproducible.
-- **Defaults:** 15 new cards a day in total (split across current-term courses by their backlog), no review cap (a warning appears above 200), interval fuzz and load balancing on, siblings buried until the next day, **leech** at 8 lapses (flagged, not suspended, shown in *Leeches* with *Fix with AI*).
-- **Exam mode:** set the exam start date (default: the first Monday of June, editable). In the last 6 weeks, intervals are capped so every card comes round at least once before the exam, and desired retention rises to 0.93 for current-year courses.
-- **Optimiser:** after about 1,000 reviews, the VPS runs the official FSRS optimiser on the review log and offers new parameters (*"predicted to save 12 % of your time"*). Phase 5.
+- **FSRS-6** with default parameters and **desired retention 0.90**, one learning step (10 min) and one relearning step (10 min). If an imported Anki deck already has FSRS parameters, they're used. We vendor a Swift port of the open-source reference implementation as source code (§8).
+- **Card state is derived, not stored:** it's a fold over the append-only review log (§7.4), cached for speed and always reproducible. That's also what lets imported Anki history carry straight over (§4.8).
+- **Defaults:** 15 new cards a day in total, no review cap (with a warning above 200), interval fuzz and load balancing on, siblings buried until the next day, and **leech** at 8 lapses (flagged, not suspended; shown in *Leeches* with *Fix with Claude*).
+- **Exam mode:** set the exam start date (default: the first Monday of June). In the last 6 weeks, intervals are capped so every card comes round before the exam, and desired retention rises to 0.93.
+- **Optimiser:** after about 1,000 reviews, the VPS runs the official FSRS optimiser on your review log and offers new parameters. Phase 5.
 
 ### 4.7 Stats
 
-Swift Charts, one scrolling page, filterable by course:
+Swift Charts, on one scrolling page, filterable by course:
 
-1. **Heatmap**: reviews per day for the year (GitHub-style), plus the streak.
-2. **Due forecast**: bars for the next 30 days.
+1. **Heatmap**: reviews per day for the year, plus the streak.
+2. **Due forecast** for the next 30 days.
 3. **True retention** by course over the last 30 days, against the 90 % target line.
-4. **Maturity**: new / learning / young / mature stacked bars per course.
-5. **Time**: minutes per day, and average seconds per card.
-6. **Exam readiness** ★: *predicted recall on 1 June* per course. FSRS can compute each card's retrievability at a future date, so this is the share of cards above 90 % on exam day *if you keep reviewing*. It's the number a Tripos student actually cares about.
-7. **Hardest cards**: leeches and cards with the highest difficulty, with *Fix with AI* (split or rewrite).
+4. **Maturity**: new / learning / young / mature, per course.
+5. **Time**: minutes per day, and the average per card. Macroscopic cards take minutes, not seconds, so this matters for planning.
+6. **Exam readiness** ★: *predicted recall on 1 June* per course, computed from each card's FSRS retrievability on exam day.
+7. **Hardest cards**: leeches and the highest-difficulty cards, with *Fix with Claude*.
+
+### 4.8 Importing your Anki decks
+
+- **A one-off import per deck, run on the VPS.** In the app, choose *Import Anki deck…* and pick the `.apkg`.
+  1. The app uploads it to the VPS. A modern `.apkg` is a zip holding a zstd-compressed SQLite collection; iOS has no built-in zip or zstd API, but the VPS does.
+  2. The VPS unpacks it and converts it into cards plus review history.
+  3. The result lands in the Inbox as one item (*"Methods: 214 cards, 1,930 past reviews"*). Check a few cards, then *Accept all*.
+- **What carries over:**
+  - Front and back exactly as written, with the approved mechanical fix applied: `$…$` becomes `\( … \)` (guidelines §6.7).
+  - Anki note IDs and GUIDs, so a re-import updates cards instead of duplicating them.
+  - Tags, and media (images go to `cards-media/`).
+  - **The full review log.** FSRS recomputes each card's state from it, so your schedule carries on where Anki left off.
+- **Decks are matched to courses by name.** You confirm the mapping.
+- **Export back to Anki** (`.apkg` / TSV, built on the VPS) comes later, so you're never locked in.
 
 ---
 
-## 5. Where AI fits in the UI
+## 5. AI: Claude on your VPS
+
+> **Owner decision (22 Nov 2026): no Gemini.** Generating, explaining and editing cards for Part IB maths needs a frontier model working agentically with the whole course in view; Flash-class models can't produce cards to the required standard. So **every AI feature runs on Claude Opus 5.5 (`claude-opus-5-5`) through Claude Code on the VPS**, signed in with your subscription. The app never holds an AI credential, only a token for your VPS.
 
 ### 5.1 Principles
 
-1. **AI is a verb on your content.** It appears as a ✨ action *next to* the thing it acts on: a region, a card, a lecture range. There's no separate "AI chat" tab.
-2. **Everything goes through review.** Generated cards land in the **Inbox**. Edits show as a **diff** with *Accept / Reject*. AI-made content keeps an *origin* badge until you've edited or accepted it.
-3. **Cheap and instant where it can be; batch where it's big.** Small interactive tasks use Gemini directly from the iPad. Turning whole lectures into cards runs as a job on the VPS with Claude Code.
-4. **It degrades gracefully.** Offline: the action queues (*"will run when you're online"*). Daily quota hit: *"Gemini's free limit is used up for today. Send this to the VPS queue instead?"* Bad output: one automatic retry, then the raw text is shown.
+1. **Whole-course context, always.** Every request, even a question about one card, runs with the course's lecture notes (including your ink), its existing cards, your card guidelines and the course's extra instructions available. Claude opens what it needs with its file tools instead of getting a snippet.
+2. **Conversations, not one-shot buttons.** You can always reply. A suggestion isn't only *Accept / Reject / Edit*: you can say *"this step still doesn't make sense"* and keep going until it does.
+3. **AI proposes, you decide.** Generated cards go to the Inbox, edits arrive as proposals with a diff, and the additions-only check protects your wording.
+4. **Your guidelines are the spec** (§5.4).
+5. **It degrades gracefully.** Offline: messages and jobs queue. VPS down or subscription limit reached: clear status, and work resumes later. Nothing else in the app depends on AI.
 
-### 5.2 AI surfaces
+### 5.2 Where Claude appears
 
-| Where | Action | Result | Engine |
-|---|---|---|---|
-| Editor: region / lasso | ✨ **Make cards** | 1–5 suggested cards in a sheet (accept inline) or sent to the Inbox | Gemini, vision |
-| Editor: region / page | ✨ **Transcribe** | Markdown + LaTeX of your handwriting or of the PDF region; copy, use as a card, and it's indexed for search | Gemini, vision |
-| Editor: region / page | ✨ **Explain** | Side panel with an explanation and follow-up chips | Gemini |
-| Review (after reveal) | ✨ **Explain** | Side panel. Chips: *Why is this true? · Example · Counterexample · Common mistakes · Simpler*. *Save to Extra* keeps the answer on the card. | Gemini |
-| Card editor | **Ask AI to change…** | Structured patch → diff → Accept (*"split into two cards"*, *"use $\ker$ notation"*) | Gemini (light model) |
-| Card editor | ✍︎ **Write it** | Handwritten formula → LaTeX at the cursor | Gemini, vision |
-| Course page / outline / notes | ✨ **Generate cards from lectures 13–16…** | Batch job → VPS → Claude Code → Inbox (with a notification badge) | Claude Code (VPS) |
-| Leeches / hardest cards | **Fix with AI** | Rewrite or split suggestions → Inbox | Gemini or Claude |
-| Inbox | (automatic) | Tag suggestions, duplicate warnings | local + Gemini |
+| Where | Action | What happens |
+|---|---|---|
+| Course page / outline | **Generate cards from lectures…** (whole course or a range) | A batch job (§5.5) that follows your guidelines end to end: read everything, chunk, plan, write, check, report. Cards and the report go to the Inbox. |
+| Course page | **Enhance existing cards** | Additions-only proposals for the deck (guidelines §6), shown in the Inbox as diffs |
+| Course page | **Ask about this course** | A course-level thread (§5.3) |
+| Editor: lasso / region | **Make cards** · **Ask Claude about this** · **Transcribe** | The region and its page are attached. Cards go to the Inbox, questions to a thread, transcriptions become MathJax text. |
+| Review, after reveal | **Discuss** | Opens the card's thread beside the answer |
+| Review, after reveal | **Check my attempt** | Claude marks your handwritten attempt against the card and the course |
+| Card editor | Chat strip · ✍︎ **Write it** | Edit by conversation; handwriting → MathJax |
+| Inbox | **Discuss** on any proposal | A thread with that proposal in context. Revisions replace the proposal in place. |
+| Leeches / hardest cards | **Fix with Claude** | Opens a thread pre-filled with the card's failure history |
 
-### 5.3 Engines, keys and quotas
+### 5.3 Card threads: talking to Claude
 
-- **Gemini (instant).** You paste your own API key into *Settings → AI*. It's stored in the **Keychain** of that app copy and is never in the repo (the repo is public) or in the synced folder. Models are chosen per task from a list fetched from the API (a vision-capable *Flash* model for transcription and cards; a *Flash-Lite* model for text edits and explanations), because the free lineup changes often. **The free tier is small and shrinking.** Late-2026 reports put it at about 20 requests a day on the top Flash model and a few hundred a day on Flash-Lite, counted per Google Cloud project, and free-tier prompts may be used by Google to improve its products. So the app shows a **"today's AI budget" meter**, routes text-only work to the light model, and never spends requests in the background.
-- **On-device model (opportunistic).** The iOS 26 SDK has Apple's Foundation Models framework and the M4 Air supports Apple Intelligence, but forum reports say it's unavailable in Playgrounds builds. If it works in the SideStore build, it takes over *text-only* edits (rephrase, split, tag) for free and offline. We never depend on it.
-- **Claude Code (batch).** It runs **on the VPS**, logged in with your subscription on the server. The app never sees that credential. The app talks to a small job API on the VPS with a per-device token (§7.7). It **won't** use GitHub Actions for this: the repo is public, so workflow logs and artifacts would expose your notes.
-- **Prompts are files in the repo** (`Resources/Prompts/*.md`): a card style guide (atomic, one idea per card, the course's notation, `$…$` LaTeX, a label on each card, ≤ 40 words a side) plus JSON output schemas. Better cards are a PR away.
-- **Context sent with requests:** course name, nearby page text, bookmarks (lecture number), and the deck's existing card fronts (to avoid duplicates). Nothing else.
+- **Every card has a thread.** It's saved in the library (`threads/<cardID>.jsonl`) and can be reopened from the card, the review screen or the Inbox. There's also one thread per course for general questions.
+- **Placement:** a side panel beside the card on the iPad in landscape, a sheet in portrait, full screen on the iPhone.
+- **Composer:** type, dictate, or **write with the Pencil** (sent as an image; Claude reads handwriting). **You can point at things:** tap a section, line or display equation in the rendered card, or lasso part of your attempt, to quote it into your message (*"this step: why can we swap the sum and the integral?"*).
+- **Replies stream in,** rendered with the same MathJax view as cards. A live status line shows what Claude is doing (*"reading LA notes pp. 55–61…"*).
+- **Proposals live inside the conversation.** When Claude suggests a change, it appears as a proposal block: the diff, the *Additions only ✓* badge (or a warning), and **Apply** / **Keep talking**. Reply instead, and Claude revises the proposal in place. Applied changes keep the card's ID and review history, and can be undone from the card's revisions.
+- **Threads are Claude Code sessions on the VPS,** resumed for each new message, so Claude remembers the whole conversation.
 
-### 5.4 Batch job flow
+### 5.4 Your card guidelines in the app
+
+- **Where they live:** `MathsMaster/AI/card-guidelines.md` in your library. You edit them in *Settings → AI → Card guidelines*, and they're synced and backed up. Each course can add `Courses/<course>/ai-instructions.md`, e.g. notes on handwritten material (guidelines §7.2). **They stay out of the public repo.**
+- **Kept verbatim.** The app layers a short **app adapter** on top (in the repo, `Resources/Prompts/app-adapter.md`). It only overrides the delivery details, so you keep editing a single document you already know.
+
+| Guidelines section | In the app |
+|---|---|
+| §1–3 goals, workflow, card content | **Unchanged.** Claude follows them as written: read everything first, chunk, macroscopic cards, zero omission, line-by-line proofs, stand-alone cards with no numbering, precise assumptions. |
+| §4 diagrams | **Unchanged.** The VPS renders each SVG to an image so Claude can look at it before delivering, as §4 asks. The app renders inline SVG with `currentColor`. |
+| §5 formatting | **Kept:** the HTML subset and MathJax `\( \)` / `\[ \]`, no `$`, no `**`, `&lt;` for less-than. **Only the packaging changes:** instead of a fenced ` ```html ` block, `---` separators and *Front/Back* labels, each card is a JSON object `{front, back, label, lecture, source, status}`. |
+| §6 existing cards | Applies to cards already in the app and to Anki imports. The additions-only rule is enforced by the app's check (§4.5), and IDs and review history are always preserved. |
+| §7 errors and handwriting | **Unchanged.** Errors and `[unclear in notes: …]` readings are collected into the job report and linked to their pages and cards. |
+| §8 deliverables and checks | The `.txt` / `.tsv` / `.apkg` files are replaced by the Inbox job: the cards plus the §8.3 report. The §8.2 checks run on the VPS before delivery (every snippet compiled with MathJax; delimiters and tags balanced; no `$`, `**` or raw `<`; no numbering or cross-card references; additions-only) and again in the app. |
+| §10 Anki files | Used only by the one-off Anki import (§4.8) and the later Anki export. |
+
+### 5.5 How it runs on the VPS
 
 ```
-iPad (app)                          VPS                               iPad (app)
-──────────                          ───                               ──────────
-Select lectures 13–16 ──render──▶  POST /v1/jobs (flattened PDF of   ◀── poll on launch/foreground
-pages with ink to one PDF           the pages + course + instructions)    GET /v1/jobs/{id}
-                                    queue → `claude -p` worker reads       → cards JSON → Inbox/
-                                    the PDF, writes cards JSON,            → badge "18 cards ready"
-                                    validates against the schema
+iPad / iPhone app                         VPS (HTTPS, per-device token)
+─────────────────                         ─────────────────────────────
+backup sync ─────────────────────────▶   library mirror: notes PDFs, ink, cards, guidelines
+                                                    │  Claude reads it with its file tools
+"Generate cards, L13–16" ─ POST /v1/jobs ─▶  job queue ─▶ claude -p   (Opus 5.5, headless)
+thread message ── POST /v1/threads/{id} ──▶  claude -p --resume <session>
+◀─ streamed reply + status (SSE) ─────────   validator: MathJax compile, guideline lint,
+◀─ job result: cards JSON + report ───────   additions-only test, SVG → image for Claude to check
 ```
+
+- **Claude Code runs headless** (`claude -p` with streaming JSON output) on model `claude-opus-5-5`, at high effort for card generation. Each thread is a resumable Claude Code session. The worker runs in a per-course workspace holding the mirrored course files, so Claude can open any lecture page or card itself.
+- **The backup mirror doubles as the AI's context.** The app keeps the VPS mirror current (§7.7), so Claude always sees your latest notes and ink without the app uploading them per request. Only things not yet synced (e.g. the attempt you just wrote) are attached to the request.
+- **Output is validated, not trusted.** The worker checks the cards JSON against the schema and the §8.2 checks, and asks Claude to fix any failures before anything reaches you.
+- **Limits:** the subscription has usage limits. Big jobs (a whole course) queue and show progress, and can run overnight. The app always shows job status, never an unexplained spinner.
+- **Latency:** thread replies start within seconds and stream. Deep questions take longer, and the status line shows what Claude is doing meanwhile.
+- **Never:** subscription credentials in the app or the repo, or notes in GitHub Actions (the repo is public).
 
 ---
 
@@ -415,8 +474,8 @@ pages with ink to one PDF           the pages + course + instructions)    GET /v
 |---|---|---|
 | UI chrome | **SF Pro** (system), Dynamic Type text styles | Large titles (34 pt bold) only on top-level pages (Today, course pages) |
 | Numbers (due counts, stats, streak) | **SF Pro Rounded**, monospaced digits | `fontDesign(.rounded)` + `monospacedDigit()` so counts don't jiggle |
-| Card text and all typeset maths | **KaTeX fonts (Computer Modern look)** for *both* text and maths | Cards read like the lecture notes. Base size 24 pt on 11″, 26 pt on 13″, following Dynamic Type |
-| LaTeX source in the editor | **SF Mono** | With light syntax colouring: commands, braces, `$` delimiters |
+| Card text and all typeset maths | **MathJax (TeX fonts) for maths, Latin Modern for prose** | Cards read like the lecture notes. Base size 19 pt on 11″, 20 pt on 13″ (macroscopic cards are long), following Dynamic Type |
+| Card source in the editor (HTML + MathJax) | **SF Mono** | With light syntax colouring: tags, commands, braces, `\( \)` delimiters |
 
 ### 6.3 Colour
 
@@ -442,7 +501,7 @@ Tokens, defined once in the asset catalog with light and dark values:
 - **The UI is fully dark.** **Paper stays white by default** (lecture PDFs are white, and ink colours should look like ink), with a slightly dimmed page edge so it isn't a lightbox.
 - **Canvases on white paper are forced to the light style.** Otherwise PencilKit's automatic dark-mode adaptation renders black ink as white.
 - **Dark paper** (a notebook setting) lets PencilKit adapt the ink, and templates draw in light grey. Ink is stored in its light-mode colours, so **export and print are always black on white**.
-- Cards in dark mode: a dark surface, KaTeX in light ink, and grade colours lifted for contrast.
+- Cards in dark mode: a dark surface, MathJax and SVG diagrams in light ink (they use `currentColor`), and grade colours lifted for contrast.
 
 ### 6.5 Motion and feedback
 
@@ -465,7 +524,7 @@ Tokens, defined once in the asset catalog with light and dark values:
 | Editor | 2-finger tap / 3-finger tap | Undo / Redo |
 | Editor | ⌘F · ⌘B · ⌘P | Find in document · Bookmark page · Print |
 | Editor | drag a lasso selection onto the Inbox or a card badge | Make a card from it |
-| Review | Space · 1–4 · ⌘Z · E · S | Reveal (or Good) · Grade · Undo · Edit · Source |
+| Review | Space · 1–4 · ⌘Z · D · C · E · S | Reveal (or Good) · Grade · Undo · Discuss · Check my attempt · Edit · Source |
 | Inbox | → / A · ← / R · E | Accept · Reject · Edit |
 
 All shortcuts are declared through SwiftUI `.commands` / `.keyboardShortcut`, so they appear in the iPadOS 26 menu bar and in the ⌘-hold overlay.
@@ -491,7 +550,21 @@ All shortcuts are declared through SwiftUI `.commands` / `.keyboardShortcut`, so
 
 ### 6.9 Accessibility
 
-Dynamic Type across all chrome; VoiceOver labels on every control; KaTeX also produces MathML, so typeset cards read aloud; state is never shown by colour alone; hit targets ≥ 44 pt, and grade buttons ≥ 64 pt tall.
+Dynamic Type across all chrome; VoiceOver labels on every control; MathJax provides speech text for maths, so typeset cards read aloud; state is never shown by colour alone; hit targets ≥ 44 pt, and grade buttons ≥ 64 pt tall.
+
+
+### 6.10 iPhone companion (SideStore build)
+
+![iPhone companion: review and a card thread](mockups/07-iphone.svg)
+
+The iPhone app is the same codebase with phone layouts, for when the iPad isn't with you. **Writing stays on the iPad:** with the phone you write on paper or a whiteboard.
+
+- **Tabs:** Today · Courses · Cards · Inbox, with Search from a pull-down.
+- **Review:** front → tap anywhere to reveal → grade with big buttons at the bottom, within thumb reach. There's no writing area. Long answers scroll, with section chips. *Discuss* opens the card's thread full screen.
+- **Read everything:** lecture notes, notebooks and sheets open read-only, with your ink, and zoom.
+- **Threads and the Inbox work fully.** A phone is good for talking to Claude and triaging cards.
+- **The same library folder** (picked once on the phone through iCloud Drive) and the same VPS token setup.
+- Built by CI and installed with SideStore on the phone, because Playgrounds doesn't run on iPhone.
 
 ---
 
@@ -499,7 +572,7 @@ Dynamic Type across all chrome; VoiceOver labels on every control; KaTeX also pr
 
 ### 7.1 Principle: files are the truth, everything else is a cache
 
-**Decision:** the source of truth is a **plain folder of human-readable files** in iCloud Drive (`iCloud Drive › MathsMaster`). You pick it once in each app copy through the document picker, and the app keeps a **security-scoped bookmark** to it. Everything else is derived and disposable: in-memory models, thumbnails, the search index, cached FSRS state, rendered KaTeX snapshots.
+**Decision:** the source of truth is a **plain folder of human-readable files** in iCloud Drive (`iCloud Drive › MathsMaster`). You pick it once in each app copy through the document picker, and the app keeps a **security-scoped bookmark** to it. Everything else is derived and disposable: in-memory models, thumbnails, the search index, cached FSRS state, rendered-card snapshots.
 
 Why not SwiftData, Core Data or SQLite as the store?
 
@@ -514,10 +587,12 @@ Why not SwiftData, Core Data or SQLite as the store?
 MathsMaster/                               ← the folder you pick (iCloud Drive)
 ├── library.json                           years, terms + dates, courses (id, name, colour, folder), schemaVersion
 ├── settings.json                          shared, non-secret settings (scheduler, templates, AI model choices)
-├── devices.json                           install IDs → names ("iPad · Playgrounds", "iPad · SideStore")
+├── devices.json                           install IDs → names ("iPad · Playgrounds", "iPad · SideStore", "iPhone")
+├── AI/card-guidelines.md                  your card guidelines (edited in Settings → AI; never in the repo)
 ├── Courses/
 │   └── Linear Algebra/
-│       ├── course.json                    id, exam date, outline cache
+│       ├── course.json                    id, exam date, outline cache, Anki deck mapping
+│       ├── ai-instructions.md             optional extra instructions for Claude for this course
 │       ├── Lecture notes/
 │       │   ├── LA notes 2026.pdf          the original, never modified
 │       │   └── LA notes 2026.pdf.ink/
@@ -529,8 +604,10 @@ MathsMaster/                               ← the folder you pick (iCloud Drive
 │       │                                  pages/*.drawing, feedback/*.pdf
 │       ├── Notebooks/
 │       │   └── Lecture 16 working.mmnote/ document.json, pages/*.drawing
-│       ├── cards.json                     the course deck
-│       └── cards-media/<cardID>.png|.drawing
+│       ├── cards.json                     the course deck (HTML + MathJax fields, revisions)
+│       ├── cards-media/<cardID>.png|.drawing
+│       ├── threads/<cardID>.jsonl         conversations with Claude (plus course.jsonl)
+│       └── attempts/<reviewID>.drawing    review attempts you kept
 ├── Reviews/<installID>/2026-11.jsonl      append-only review log (one file per app install per month)
 ├── Inbox/Import/                          drop PDFs here from Files or the PC
 ├── Inbox/jobs/<jobID>.json                AI card batches + triage state
@@ -541,7 +618,7 @@ MathsMaster/                               ← the folder you pick (iCloud Drive
 
 - **IDs, not paths, are identity.** Every course, document, page and card has a UUID. Folder and file names are just for humans, so renaming in the app (or in Files) never breaks a link. On launch the app rebuilds an `ID → path` index by scanning.
 - **Every JSON file carries a `schemaVersion`.** Migrations run on load and write back lazily.
-- **The local cache** (`Library/Caches/` in each app copy's own sandbox) holds thumbnails, OCR text and boxes, the search index, FSRS state, and KaTeX snapshots. It's always safe to delete.
+- **The local cache** (`Library/Caches/` in each app copy's own sandbox) holds thumbnails, OCR text and boxes, the search index, FSRS state, and rendered-card snapshots. It's always safe to delete.
 
 ### 7.3 Main records (shape only)
 
@@ -576,21 +653,23 @@ MathsMaster/                               ← the folder you pick (iCloud Drive
 
 ### 7.6 Two app copies (Playgrounds and SideStore)
 
-- **Each copy has its own sandbox, bookmark and Keychain.** So: a one-time *Choose library folder* screen in each, a Gemini key and VPS token entered in each (both are in the Keychain and never synced), and an `installID` per copy.
+- **Each copy has its own sandbox, bookmark and Keychain.** So: a one-time *Choose library folder* screen in each, a VPS token entered in each (kept in the Keychain and never synced), and an `installID` per copy.
 - **Everything else is shared through the folder,** including non-secret settings, so both copies behave identically.
 - The **first-run screen** explains this in one paragraph and offers *Create a new MathsMaster folder* or *Open existing*.
 
-### 7.7 The VPS: backup and AI jobs (Phase 4)
+### 7.7 The VPS: backup, Anki import and Claude (Phases 2–3)
 
 A small HTTPS service (behind Caddy) with a per-device bearer token:
 
 | Endpoint | Purpose |
 |---|---|
 | `GET /v1/manifest` · `PUT/GET /v1/files/{path}` | **Backup mirror**: the app uploads changed files (content hash; debounced; optionally Wi-Fi only). The server takes nightly snapshots (e.g. restic, 90 days). *Settings → Backups → Restore* always restores into a **new** folder, never over your library. |
-| `POST /v1/jobs` · `GET /v1/jobs/{id}` | **AI batch jobs** (§5.4): the upload is a flattened PDF plus a JSON request. A worker runs Claude Code headless, validates the cards JSON, and the app fetches it into `Inbox/jobs/`. |
+| `POST /v1/imports` · `GET /v1/imports/{id}` | **Anki import** (§4.8): upload an `.apkg`, get back cards + review history for the Inbox. |
+| `POST /v1/jobs` · `GET /v1/jobs/{id}` | **Claude batch jobs** (§5.5): card generation and deck enhancement over the mirrored course files. The result (cards JSON + report) goes into `Inbox/jobs/`. |
+| `POST /v1/threads/{id}` (SSE stream) | **Card and course threads** (§5.3): one resumable Claude Code session per thread, with the reply streamed. |
 | `POST /v1/fsrs/optimize` | (Phase 5) runs the FSRS optimiser on uploaded review logs. |
 
-The VPS is deliberately **not** the live sync: iCloud Drive already syncs files between the two app copies and the PC, and works offline. If iCloud storage is a problem (open question 1), the same folder layout can be synced to the VPS instead.
+The VPS is deliberately **not** the live sync: iCloud Drive already syncs files between the two app copies and the PC, and works offline. Because the mirror stays current, it's also what Claude reads when it needs your notes (§5.5).
 
 ### 7.8 Scale (one year of Part IB)
 
@@ -609,10 +688,11 @@ About 15 courses · 30 lecture PDFs (1–10 MB each) · 60 example sheets · 1,5
 | **PDFKit** (`PDFView`, overlay view provider, markup mode, text, PDF generation) | ✅ | Page engine plan A, export. |
 | PaperKit (iOS 26: Apple's markup with shapes, text boxes, images) | ⚠️ in the SDK | Deferred. We may adopt it for text boxes and shapes after v1. |
 | Vision (text recognition, incl. handwriting) · VisionKit document camera | ✅ | Handwriting search, *Scan paper*. The camera needs the **Camera** capability (Playgrounds' *App Settings → Capabilities* adds the usage string). |
-| WebKit (`WKWebView`) | ✅ | KaTeX rendering. KaTeX's JS, CSS and fonts are bundled as resources and loaded with `loadFileURL(_:allowingReadAccessTo:)`. |
+| WebKit (`WKWebView`) | ✅ | Card rendering: MathJax 3 and the Latin Modern font are bundled as resources and loaded with `loadFileURL(_:allowingReadAccessTo:)`. |
 | Swift Charts | ✅ | Stats. |
 | SwiftData | ✅ | Not used as the store (§7.1); possible cache later. |
-| Foundation Models (on-device LLM) | ⚠️ | In the iOS 26 SDK, but reported as unavailable in Playgrounds. Optional, never relied on (§5.3). |
+| Foundation Models (on-device LLM) | ⚠️ | In the iOS 26 SDK but reported as unavailable in Playgrounds. **Not used:** all AI runs on Claude (§5). |
+| zip / zstd (to read Anki `.apkg` files) | ❌ no system API | The Anki import runs on the VPS (§4.8). |
 | **iCloud container, CloudKit, `NSUbiquitousKeyValueStore`, `NSMetadataQuery`** | ❌ | All need an iCloud entitlement, which Playgrounds can't add and a free Apple ID can't sign. **Workaround: a user-picked iCloud Drive folder** (next row). |
 | **Document picker folder access + security-scoped bookmark** | ✅ | `.fileImporter(allowedContentTypes: [.folder])` → `startAccessingSecurityScopedResource()` → `bookmarkData()`. Resolved each launch; re-prompt if stale. *Check that the bookmark persists across Playgrounds runs (spike).* |
 | `NSFileCoordinator` on iCloud Drive files (triggers downloads) | ✅ | All I/O (§7.4). |
@@ -627,15 +707,16 @@ About 15 courses · 30 lecture PDFs (1–10 MB each) · 60 example sheets · 1,5
 | Apple Pencil Pro squeeze, double-tap, hover, barrel roll, haptics | ✅ | System tool picker + `UIPencilInteraction` / SwiftUI `onPencilSqueeze` / `onPencilDoubleTap` (17.5+) + `UICanvasFeedbackGenerator`. |
 | Swift packages from Git | ✅/⚠️ | Source packages work. **Avoid packages with macros, build plugins or binary targets** (third-party macro plugins aren't reliable in Playgrounds). We vendor small libraries (the FSRS port) as source. Target: **≤ 2 external packages.** |
 | Resources (`Resources/`, asset catalog, app icon, accent colour) | ✅ | Access processed resources with `Bundle.module`. |
-| Custom fonts in native UI | ⚠️ | No `UIAppFonts`; register at runtime with `CTFontManagerRegisterFontsForURL`. We barely need it: native UI uses SF, and KaTeX fonts load through CSS inside the web view. |
-| Networking (`URLSession`), Keychain, printing (`UIPrintInteractionController`) | ✅ | Gemini, VPS, print. |
+| Custom fonts in native UI | ⚠️ | No `UIAppFonts`; register at runtime with `CTFontManagerRegisterFontsForURL`. We barely need it: native UI uses SF, and card fonts load through CSS inside the web view. |
+| Networking (`URLSession`, server-sent events for streaming), Keychain, printing (`UIPrintInteractionController`) | ✅ | VPS API and Claude threads, the device token, print. |
+| iPhone | ⚠️ | Playgrounds runs only on iPad and Mac. The iPhone app is the same package (`supportedDeviceFamilies: [.pad, .phone]`), built by CI and installed with SideStore on the phone. |
 | Debugger, crash logs | ⚠️ minimal | Built-in **Diagnostics** screen: a log viewer, a "last session ended cleanly?" breadcrumb, and *Export logs*. Logs are also written to `Logs/` in the library so they can be attached to a bug report. |
 | Optimised builds | ⚠️ | Playgrounds builds for development (unoptimised). Ink and PDF rendering are system code, so they're unaffected. The SideStore build from CI is a Release build. |
 
 **Build and CI rules that follow from this:**
 
 1. **CI compiles with Xcode 26.x (the iOS 26 SDK), the same SDK as Playground 4.7.** If CI used Xcode 27, code calling iOS 27 APIs would pass CI and then fail to build on the iPad. The deployment target is **iPadOS 26.0**.
-2. CI runs `xcodebuild … -destination 'generic/platform=iOS Simulator' build` on every PR. A second job archives an **unsigned Release `.ipa`** (`CODE_SIGNING_ALLOWED=NO`) as an artifact for SideStore to sign with your free Apple ID. That means 7-day re-signing (SideStore refreshes it automatically) and a limit of 3 apps / 10 App IDs a week, which is fine for one app.
+2. CI runs `xcodebuild … -destination 'generic/platform=iOS Simulator' build` on every PR. A second job archives an **unsigned Release `.ipa`** (`CODE_SIGNING_ALLOWED=NO`) as an artifact for SideStore to sign with your free Apple ID. That means 7-day re-signing (SideStore refreshes it automatically) and a limit of 3 apps / 10 App IDs a week, which is fine for one app. The same `.ipa` installs on the iPhone.
 3. **Keep files small and type-checking cheap.** Playgrounds recompiles the whole module on the iPad. Avoid giant view bodies and deeply nested generic builders.
 4. **Leave `Package.swift` to code, not to Playgrounds' settings UI.** Change capabilities in the repo, so Playgrounds never rewrites the manifest and drops keys.
 
@@ -643,64 +724,77 @@ About 15 courses · 30 lecture PDFs (1–10 MB each) · 60 example sheets · 1,5
 
 ## 9. Roadmap
 
-Each milestone ends with something **you can run on the iPad from Playgrounds** and a concrete test. The term dates are approximate and editable in Settings.
+Each milestone ends with something **you can run on the iPad from Playgrounds** and a concrete test. The owner's guidance is to ship a fast first draft and tune everything to taste afterwards. The term dates are approximate.
 
 ### Phase 0: foundations and spikes (≈ 1 week · now → end of Michaelmas Full Term)
 
 - `.swiftpm` scaffold: an app shell with the sidebar and placeholders; Package.swift configured in code (§8).
-- CI: Xcode 26.x compile on every PR. Pure logic (FSRS, merging, parsing) lives in a UIKit-free folder that a **CI-only root `Package.swift`** also builds as a library, so `swift test` runs unit tests on macOS runners even though Playgrounds app projects have no test targets.
+- CI: Xcode 26.x compile on every PR. Pure logic (FSRS, merging, parsing, the card lint) lives in a UIKit-free folder that a **CI-only root `Package.swift`** also builds, so `swift test` runs unit tests on macOS runners (Playgrounds app projects have no test targets).
 - The Working Copy → Playgrounds loop, written up step by step in the README.
-- First-run *Choose library folder* screen, bookmark, `FileStore` actor, and a **Diagnostics** screen (logs).
-- **Ink spike:** plan A versus plan B (§3.1) with a real lecture-notes PDF. Measure crispness, latency and scrolling, then decide.
-- **Device checks:** bookmark persistence across Playgrounds runs, `NSFilePresenter` on an iCloud Drive folder, local notifications from Playgrounds, Foundation Models availability, and whether `additionalInfoPlistContentFilePath` survives.
+- First-run *Choose library folder* screen, bookmark, `FileStore` actor, and a **Diagnostics** screen.
+- **Ink spike:** plan A versus plan B (§3.1) on a real lecture-notes PDF. Measure crispness, latency and scrolling, then decide.
+- **Device checks:** bookmark persistence across Playgrounds runs, `NSFilePresenter` on an iCloud Drive folder, local notifications from Playgrounds, and whether `additionalInfoPlistContentFilePath` survives.
 
-**Test:** run in Playgrounds → pick `iCloud Drive/MathsMaster` → open a sample PDF → write on it → quit and relaunch → the ink is still there, and `….pdf.ink/` is visible in Files.
+**Test:** run in Playgrounds → pick `iCloud Drive/MathsMaster` → open a sample PDF → write on it → quit and relaunch → the ink is still there.
 
 ### Phase 1: MVP, write on everything (≈ 2–3 weeks · in daily use by Christmas)
 
 | Milestone | Contents | You can test |
 |---|---|---|
-| 1.1 Library | Courses (Part IB template, colours, terms), sidebar, course page shelves, import PDFs (picker + drag and drop), rename / move / Trash | Set up all your Michaelmas courses and drop in their notes |
-| 1.2 Editor | Page engine, tool picker, Pencil/finger rules, 2-/3-finger undo/redo, autosave, zoom memory, page grid (insert / reorder / delete), bookmarks | Annotate a whole lecture's notes; compare the ink with Notes side by side |
+| 1.1 Library | Courses (Part IB template, colours, terms), sidebar, course page shelves, import PDFs (picker + drag and drop), rename / move / Trash | Set up your Michaelmas courses and drop in their notes |
+| 1.2 Editor | Page engine, tool picker, Pencil/finger rules, 2-/3-finger undo/redo, autosave, zoom memory, page grid, bookmarks | Annotate a whole lecture; compare the ink with Notes side by side |
 | 1.3 Notebooks | Templates (dot, squared, ruled, blank, answer sheet), paper colours, dark mode | Do an example-sheet question on the answer template |
 | 1.4 Two-up | Reference pane, recents → *Continue*, title search | Sheet on the left, answers on the right |
-| 1.5 Out | Print and export PDF with options; example-sheet pairing + per-question status + hand-in export | Print a notebook without the grid; produce a hand-in PDF |
+| 1.5 Out | Print and export PDF; example-sheet pairing, per-question status and **hand-in PDF** (print, email or upload it) | Print a notebook without the grid; make a hand-in PDF |
 
-### Phase 2: flashcards v1 (≈ 2–3 weeks · target: early January, for revising Michaelmas courses before Lent term)
+### Phase 2: flashcards and your Anki decks (≈ 3 weeks · target: early January, for revising Michaelmas courses before Lent term)
 
-- Card model, `cards.json`, review logs, FSRS-6 port with unit tests.
-- KaTeX renderer (web view + snapshot cache), card editor with live preview and the LaTeX bar.
-- Review screen (scratch pad, reveal, grades, undo, end card), global and per-course queues, **Today** for real.
-- Region → image card, source links, page badges.
-- Stats v1 (heatmap, forecast, retention).
-- *Parallel track:* the SideStore pipeline (unsigned Release `.ipa` from CI) and a first-run screen in the installed copy.
+- Card model and files, review logs, FSRS-6 port with unit tests.
+- **MathJax renderer** (web view + sanitiser + snapshot cache), card editor with live preview and the guideline lint.
+- **Review screen:** the auto-growing writing space, reveal with the compare layout, grades, undo, the end card. Global and per-course queues, and **Today** for real.
+- Region → image card, source links, page badges. Stats v1.
+- **VPS v1:** HTTPS service + device token, backup mirror, and the **Anki import job** (§4.8), so your existing decks and their review history come in.
+- *Parallel track:* the SideStore pipeline (unsigned Release `.ipa` from CI).
 
-**Test:** make 30 Linear Algebra cards (typed and from regions), review daily for a week, then install via SideStore and see the same library and the same due counts.
+**Test:** import one of your Anki decks and check that the cards look as they did in Anki and the due counts make sense. Review for a week, writing whole proofs on the cards.
 
-### Phase 3: instant AI with Gemini (≈ 2 weeks · start of Lent)
+### Phase 3: Claude on the VPS (≈ 2–3 weeks · start of Lent)
 
-Settings → AI (key in the Keychain, model pickers, budget meter) · Transcribe region → LaTeX · Make cards from a region · Explain (review and editor) · Ask AI to change a card (diff) · Write it (handwriting → LaTeX) · Inbox triage.
-**Test:** turn a page of lecture notes into five good cards in under a minute; get an explanation of a failed card mid-review.
+The job and thread APIs, the Claude Code worker, the validator (MathJax compile, guideline lint, additions-only, SVG render) and the app adapter prompt · Settings → AI (card guidelines editor, per-course instructions) · **card threads** with pointing, Pencil input and in-thread proposals · **Check my attempt** · **Generate cards from lectures** with the Inbox job report · **Enhance existing cards** · region → *Make cards* / *Ask* / *Transcribe* · *Write it*.
 
-### Phase 4: VPS backup and Claude batch (≈ 2 weeks · Lent)
+**Test:** generate cards for a block of lectures that has no deck yet, and judge them against your guidelines. Discuss a confusing step on a card until it makes sense, then apply Claude's addition.
 
-The VPS service (job API, backup mirror, nightly snapshots, deploy script) · Settings → VPS (URL + token) · backup status in the sidebar · *Generate cards from lectures…* → job → Inbox.
-**Test:** queue cards for four lectures, find them in the Inbox later; restore yesterday's backup into a new folder.
+### Phase 4: iPhone companion (≈ 1–2 weeks · Lent)
+
+The same package with phone layouts (§6.10): Today, courses and documents (read-only), review without writing, card threads and Inbox triage. Built by CI and installed with SideStore on the phone.
+
+**Test:** do a review session and a card discussion on the phone on the way to a lecture.
 
 ### Phase 5: depth and polish (Lent → Easter vacation, ready for Tripos revision)
 
-Example-sheet question auto-detection, feedback import and a richer *Up next* · ⌘K search with handwriting OCR and scopes · cloze and occlusion cards · exam mode and **exam readiness** · Stats v2 · FSRS optimiser on the VPS · vector ink export · PaperKit evaluation (text boxes, shapes) · possibly: past Tripos questions by course, Anki import, an iPhone review companion (see questions).
+Example-sheet question auto-detection and supervisor-feedback import · ⌘K search with handwriting OCR · step reveal · cloze and occlusion cards · exam mode and **exam readiness** · Stats v2 · FSRS optimiser on the VPS · Anki export · vector ink export · PaperKit evaluation (text boxes, shapes) · possibly past Tripos questions by course.
 
 ---
 
-## 10. Open questions for the owner
+## 10. Decisions and open questions
 
-1. **Storage: is iCloud Drive OK as the home of your library?** It needs roughly 0.5–1 GB a year; the free 5 GB fills up quickly if iPad backups also go to iCloud. *Recommendation: iCloud Drive (with iCloud+ if needed), with the VPS as backup.* The alternative is the VPS as the primary store, which means more complexity and needing a connection to sync.
-2. **Order of the roadmap: ink and PDFs first, or flashcards first?** *Recommendation: ink first (Phase 1), cards immediately after (Phase 2), aiming at Christmas-vacation revision.* If you'd rather have cards for the vacation above everything else, Phases 1.3–1.5 can move after Phase 2.
-3. **AI and privacy: may handwritten notes go to Gemini's free tier?** Google may use free-tier prompts to improve its products. *Recommendation: Gemini only for small regions you explicitly select; whole-lecture batches only through Claude on your VPS.*
-4. **How do your supervisors take work?** On paper, emailed PDFs, or an upload site (e.g. Moodle)? This decides how much polish the hand-in export and the *Answer sheet* template get, and how early.
-5. **Anything to bring in?** Existing Anki decks, GoodNotes, Notability or Notes notebooks, or a folder of PDFs? This decides whether an importer (e.g. Anki `.apkg`) goes on the roadmap.
-6. **iPhone too?** Would you want to review cards on an iPhone later? It would be a SideStore-only build, since Playgrounds doesn't run on iPhone. If yes, we keep the review and card code free of iPad-only layouts from day one, which costs almost nothing now.
+### Decided by the owner (22 Nov 2026)
+
+| Question | Decision |
+|---|---|
+| Storage | **iCloud Drive** holds the library (50 GB plan); the VPS is backup |
+| Roadmap order | **As recommended:** ink and PDFs first, then cards. Ship a fast first draft and tune later |
+| AI provider | **Claude only**, on the VPS, with full-course context and the owner's card guidelines. **No Gemini.** Privacy isn't the concern; quality is |
+| Hand-ins | Supervisors take anything (paper, email, upload), so the app needs **one good hand-in PDF** to print or send. Details later |
+| Existing material | **Anki decks** for several courses, made by AI agents following detailed card guidelines. Import them, and make the app's AI follow the same guidelines (§4.8, §5.4) |
+| iPhone | **Yes, as a companion:** review (writing happens on paper or a whiteboard), reading, threads and triage (§6.10) |
+| Writing on cards | Confirmed and central: lots of open, scrollable space to write whole proofs before revealing (§4.3) |
+
+### Still open (needed by Phase 2)
+
+1. **The VPS:** which OS and specs, is Claude Code installed and signed in there, and do you want it reached through a domain with HTTPS or privately over Tailscale? *Recommendation: Tailscale if you already use it, otherwise a subdomain behind Caddy.*
+2. **Which Anki decks first?** Send the `.apkg` files when Phase 2 starts. The first one becomes the import test.
+3. **Card guidelines location:** they're your own prompt, so the plan keeps them in your library folder, not the public repo. Say if you'd rather have them versioned in the repo.
 
 ---
 
@@ -711,9 +805,11 @@ Example-sheet question auto-detection, feedback import and a richer *Up next* ·
 | Ink in PDF overlays is blurry when zoomed, or gestures conflict | Core experience | Phase-0 spike; plan B (custom page stack) uses the same data model |
 | iCloud Drive: evicted files, slow sync, two copies writing | Data access | Coordinated I/O, *Keep Downloaded*, per-install logs, per-page files, conflict banners (§7.5) |
 | Playgrounds quirks: manifest rewrites, package support, slow compiles on the iPad | Velocity | Manifest owned by the repo, ≤ 2 packages, small files, CI on the same SDK |
-| Gemini free tier shrinks or changes models | AI features | Pluggable providers, per-task model choice, budget meter, VPS fallback |
-| SideStore re-signing lapses (7 days) | The installed copy stops launching | SideStore refreshes it in the background; the Playgrounds copy always works; the data lives in the shared folder |
-| KaTeX web views are slow in long lists | Card browser smoothness | One shared renderer that caches snapshots; lists show snapshots, and live web views only appear on the focused card |
+| Claude subscription limits or a VPS outage | AI unavailable for a while | Jobs and messages queue with clear status. Nothing outside AI depends on the VPS; backup simply catches up later. |
+| Chat latency (Claude Code start-up plus thinking) | Threads feel slow | Streaming, a live status line, warm workers |
+| Anki import fidelity (HTML/MathJax quirks, media) | Imported cards look wrong | The same renderer as Anki (MathJax), a preview in the Inbox before accepting, Anki IDs kept so re-imports fix things in place |
+| SideStore re-signing lapses (7 days) | The installed copy stops launching | SideStore refreshes in the background; the Playgrounds copy always works; data lives in the shared folder |
+| MathJax web views are slow in long lists | Card browser smoothness | One shared renderer with a snapshot cache; live web views only for the focused card |
 
 ---
 
@@ -723,10 +819,11 @@ Example-sheet question auto-detection, feedback import and a richer *Up next* ·
 |---|---|
 | [`mockups/01-library.svg`](mockups/01-library.svg) | Main split view: sidebar + Linear Algebra course page (13″ landscape) |
 | [`mockups/02-today.svg`](mockups/02-today.svg) | Today: review hero, Up next, Continue, Inbox, heatmap |
-| [`mockups/03-editor.svg`](mockups/03-editor.svg) | Editor in example-sheet mode: question PDF reference pane, answer page, tool picker, lasso → *Make card* |
-| [`mockups/04-review.svg`](mockups/04-review.svg) | Card review: scratch area with handwriting, revealed answer, grade bar, side rail |
-| [`mockups/05-cards.svg`](mockups/05-cards.svg) | Card editor with live LaTeX preview + AI inbox triage |
+| [`mockups/03-editor.svg`](mockups/03-editor.svg) | Editor in example-sheet mode: question PDF reference pane, answer page, tool picker, lasso → *Make cards / Ask Claude* |
+| [`mockups/04-review.svg`](mockups/04-review.svg) | Card review after reveal: a long handwritten proof attempt beside the answer, section chips, Discuss / Check my attempt, floating grade bar |
+| [`mockups/05-cards.svg`](mockups/05-cards.svg) | Inbox: Claude's job report, an additions-only change to one of your cards, and the card thread where you discuss it |
 | [`mockups/06-compact.svg`](mockups/06-compact.svg) | 11″ portrait: Today and the editor at narrow width |
+| [`mockups/07-iphone.svg`](mockups/07-iphone.svg) | iPhone companion: review without writing, and a card thread |
 | [`mockups/design-plan.html`](mockups/design-plan.html) | This document rendered with all the mockups inline |
 
 ## Appendix B: sources checked (Nov 2026)
@@ -736,5 +833,4 @@ Example-sheet question auto-detection, feedback import and a richer *Up next* ·
 - `additionalInfoPlistContentFilePath` and Playgrounds dropping it: [rambo.codes](https://www.rambo.codes/posts/2021-12-28-a-document-based-app-in-swift-playgrounds-for-ipad), [FB9824864](https://github.com/feedback-assistant/reports/issues/269)
 - iPad Air (M4, 2026) specs: [Apple Support 126471](https://support.apple.com/en-us/126471)
 - PencilKit reed pen in iPadOS 26: [Apple Newsroom](https://www.apple.com/newsroom/2025/06/ipados-26-introduces-powerful-new-features-that-push-ipad-even-further/) · PaperKit: [WWDC25 session 285](https://developer.apple.com/videos/play/wwdc2025/285/)
-- Gemini API free tier, late 2026 (third-party reports; check AI Studio for your real limits): [apidog](https://apidog.com/blog/gemini-api-free-tier/), [aifreeapi](https://www.aifreeapi.com/en/posts/google-gemini-api-free-tier)
 - SideStore free-account limits: [SideStore FAQ](https://docs.sidestore.io/docs/faq)
