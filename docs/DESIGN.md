@@ -724,6 +724,15 @@ About 15 courses · 30 lecture PDFs (1–10 MB each) · 60 example sheets · 1,5
 
 ## 9. Roadmap
 
+> **Update (22 Nov 2026, owner decision): the target is a fully working app within about a week, not by Lent.** The phases below remain the order of dependencies, but they now run as **parallel workstreams** with agents working around the clock:
+> - **A:** scaffold + CI (done first; see [`ARCHITECTURE.md`](ARCHITECTURE.md) for the seams)
+> - **B:** the editor (Phase 1)
+> - **C:** cards and review (Phase 2)
+> - **D:** the VPS service (Anki import, backup, Claude)
+> - **E:** the Claude UI and iPhone layouts
+>
+> The week-numbered timings below are superseded.
+
 Each milestone ends with something **you can run on the iPad from Playgrounds** and a concrete test. The owner's guidance is to ship a fast first draft and tune everything to taste afterwards. The term dates are approximate.
 
 ### Phase 0: foundations and spikes (≈ 1 week · now → end of Michaelmas Full Term)
