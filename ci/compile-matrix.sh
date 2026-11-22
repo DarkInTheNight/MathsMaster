@@ -4,7 +4,9 @@
 # Usage: ci/compile-matrix.sh [extra swiftc flags]
 set -uo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-mapfile -t SOURCES < <(find "$ROOT/MathsMaster.swiftpm" -name '*.swift' ! -name Package.swift ! -path '*/.swiftpm/*' | sort)
+SOURCES=()
+while IFS= read -r f; do SOURCES+=("$f"); done < <(find "$ROOT/MathsMaster.swiftpm" -name '*.swift' ! -name Package.swift ! -path '*/.swiftpm/*' | sort)
+echo "${#SOURCES[@]} source files"
 FAIL=0
 for X in $(ls -d /Applications/Xcode_26*.app | sort -V); do
   export DEVELOPER_DIR="$X/Contents/Developer"
