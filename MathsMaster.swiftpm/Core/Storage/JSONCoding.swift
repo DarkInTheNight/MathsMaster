@@ -9,10 +9,27 @@ enum JSONCoding {
         return e
     }
 
+    /// Reads ISO-8601 dates with or without fractional seconds (the VPS's Anki import writes `…T03:30:40.395Z`).
     static func decoder() -> JSONDecoder {
         let d = JSONDecoder()
-        d.dateDecodingStrategy = .iso8601
+        d.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let string = try container.decode(String.self)
+            if let date = parseISODate(string) { return date }
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Not an ISO-8601 date: \(string)")
+        }
         return d
+    }
+
+    private static let plainISO = ISO8601DateFormatter()
+    private static let fractionalISO: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+
+    static func parseISODate(_ string: String) -> Date? {
+        plainISO.date(from: string) ?? fractionalISO.date(from: string)
     }
 
     static func encode<T: Encodable>(_ value: T, pretty: Bool = true) throws -> Data {
