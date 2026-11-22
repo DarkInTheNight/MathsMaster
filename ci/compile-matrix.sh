@@ -1,0 +1,25 @@
+#!/bin/bash
+# Compiles the app's Swift sources with every Xcode 26.x on the runner (Debug, like Swift Playgrounds),
+# so code that needs a newer compiler than Swift Playground ships fails here, not on the iPad.
+# Usage: ci/compile-matrix.sh [extra swiftc flags]
+set -uo pipefail
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
+mapfile -t SOURCES < <(find "$ROOT/MathsMaster.swiftpm" -name '*.swift' ! -name Package.swift ! -path '*/.swiftpm/*' | sort)
+FAIL=0
+for X in $(ls -d /Applications/Xcode_26*.app | sort -V); do
+  export DEVELOPER_DIR="$X/Contents/Developer"
+  SDK=$(xcrun --sdk iphoneos --show-sdk-path 2>/dev/null) || { echo "$X: no iOS SDK, skipped"; continue; }
+  V=$(xcrun swiftc --version 2>&1 | head -1)
+  echo "::group::$(basename "$X") · $(basename "$SDK") · $V"
+  LOG="${RUNNER_TEMP:-/tmp}/compile.log"
+  if xcrun swiftc -c -wmo -parse-as-library -module-name AppModule -Onone -DDEBUG \
+       -target arm64-apple-ios26.0 -sdk "$SDK" -swift-version 5 "$@" \
+       -o "${RUNNER_TEMP:-/tmp}/app.o" "${SOURCES[@]}" > "$LOG" 2>&1; then
+    echo "OK"; grep -c "warning:" "$LOG" | sed 's/^/warnings: /'
+  else
+    grep -E "error:" -A3 "$LOG" | head -80
+    echo "::error::$(basename "$X") ($V) failed to compile the app"; FAIL=1
+  fi
+  echo "::endgroup::"
+done
+exit $FAIL

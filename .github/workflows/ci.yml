@@ -60,35 +60,22 @@ jobs:
           path: ${{ runner.temp }}/ipa/MathsMaster.ipa
           retention-days: 14
 
-  app-oldest-sdk:
-    name: App build, Debug (oldest Xcode 26 · like Playgrounds)
+  compile-matrix:
+    name: Compile with every Xcode 26.x (Debug, like Playgrounds)
     runs-on: macos-26
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
-      # Swift Playgrounds builds Debug with its own (older) Swift 6.2 / iOS 26 SDK. The main
-      # build above uses the newest Xcode 26.x, so also build with the oldest one.
-      - name: Select oldest Xcode 26.x
+      # Swift Playground 4.7 ships an older Swift 6.x than the newest Xcode 26.x, and builds Debug.
+      - name: Compile app sources with each toolchain
+        run: ci/compile-matrix.sh
+      - name: Swift 6 language mode (diagnostic only)
+        continue-on-error: true
         run: |
-          # The oldest Xcode 26.x on the runner that has the iOS platform installed.
-          for X in $(ls -d /Applications/Xcode_26*.app | sort -V); do
-            if DEVELOPER_DIR="$X/Contents/Developer" xcodebuild -showsdks 2>/dev/null | grep -q -- "-sdk iphoneos"; then XCODE=$X; break; fi
-          done
-          echo "Using $XCODE"
-          sudo xcode-select -s "$XCODE/Contents/Developer"
-          xcodebuild -version
-          swift --version
-      - name: Build (Debug, generic iOS device, unsigned)
-        working-directory: MathsMaster.swiftpm
-        run: |
-          set -o pipefail
-          xcodebuild build \
-            -scheme MathsMaster \
-            -configuration Debug \
-            -destination 'generic/platform=iOS' \
-            -derivedDataPath "$RUNNER_TEMP/dd" \
-            -quiet \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+          export DEVELOPER_DIR=$(ls -d /Applications/Xcode_26*.app | sort -V | head -1)/Contents/Developer
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          find MathsMaster.swiftpm -name '*.swift' ! -name Package.swift -print0 | xargs -0 xcrun swiftc -typecheck -parse-as-library -module-name AppModule \
+            -target arm64-apple-ios26.0 -sdk "$SDK" -swift-version 6 2>&1 | grep "error:" | head -40
 
   launch-smoke:
     name: Launch smoke test (Debug, iPad simulator)
