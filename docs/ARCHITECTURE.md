@@ -5,7 +5,7 @@ The design is in [`DESIGN.md`](DESIGN.md). This file says where the code lives a
 ## Layout
 
 ```
-MathsMaster.swiftpm/            the Swift Playgrounds app project (open this folder in Playgrounds)
+MathsMaster2.swiftpm/            the Swift Playgrounds app project (open this folder in Playgrounds)
   Package.swift                 owned by the repo; never edit it through Playgrounds' settings UI
   App/                          @main app, RootView (first run / loading / error / main)
   Core/                         Foundation-only models and pure logic; also built by the root Package.swift for `swift test`
@@ -19,7 +19,8 @@ MathsMaster.swiftpm/            the Swift Playgrounds app project (open this fol
     Review/, Cards/             WORKSTREAM C: flashcards, review, Today's review block
 Package.swift                   CI-only: builds Core as a library so unit tests run
 Tests/MathsMasterCoreTests/     Swift Testing unit tests for Core
-.github/workflows/ci.yml        Xcode 26.x build (Release, generic iOS, unsigned) + IPA artifact; `swift test`
+.github/workflows/ci.yml        Xcode 26.x build (Release, generic iOS, unsigned) + IPA artifact; `swift test`;
+                                compile with every Xcode 26.x (ci/compile-matrix.sh); launch smoke test (ci/launch-smoke.sh)
 ```
 
 ## Rules
@@ -27,6 +28,8 @@ Tests/MathsMasterCoreTests/     Swift Testing unit tests for Core
 - **Swift 6 toolchain, Swift 5 language mode** (`swiftLanguageModes: [.v5]`), so UIKit/PencilKit/PDFKit delegate code doesn't fight strict concurrency while everything is compiled only on CI. UI types are `@MainActor`; `FileStore` is an actor.
 - **Core imports Foundation only.** Anything that needs UIKit, PDFKit or SwiftUI goes in `Services/`, `UI/` or `Features/`. New Core logic should get a test in `Tests/MathsMasterCoreTests`.
 - **CI uses Xcode 26.x (iOS 26 SDK)**, the SDK in Swift Playground 4.7. Don't use iOS 27 APIs.
+- **CI launches the app.** `launch-smoke` builds Debug (as Playgrounds does), runs it in an iPad simulator with no library and then with a fixture library (`MM_SMOKE_LIBRARY`, CI only), and fails on a crash; screenshots and any crash report are in the `launch-smoke` artifact. `compile-matrix` compiles the app with every Xcode 26.x compiler (Swift 6.2.0 → newest), because Swift Playground ships an older compiler than the newest Xcode.
+- **Never copy a project over an existing one in the iCloud Playgrounds folder.** iCloud keeps both and makes `App(1)`, `Core(1)` … duplicates, which Playgrounds compiles as duplicate types. Get builds onto the iPad with Working Copy (pull) instead.
 - **All library I/O goes through `FileStore`** (coordinated, atomic). Never write with `Data.write` directly into the library folder.
 - **Files are the truth.** Models are `Codable` with a `schemaVersion`; JSON is written with sorted keys and ISO-8601 dates (no fractional seconds).
 - **No third-party packages** without a reason in the PR; never ones with macros, plugins or binary targets.

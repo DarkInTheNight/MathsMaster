@@ -30,15 +30,15 @@ jobs:
           xcodebuild -showsdks | grep -i iphone || true
 
       - name: List schemes
-        working-directory: MathsMaster.swiftpm
+        working-directory: MathsMaster2.swiftpm
         run: xcodebuild -list
 
       - name: Build (Release, generic iOS device, unsigned)
-        working-directory: MathsMaster.swiftpm
+        working-directory: MathsMaster2.swiftpm
         run: |
           set -o pipefail
           xcodebuild build \
-            -scheme MathsMaster \
+            -scheme MathsMaster2 \
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -derivedDataPath "$RUNNER_TEMP/dd" \
@@ -51,13 +51,43 @@ jobs:
           echo "App bundle: $APP"
           mkdir -p "$RUNNER_TEMP/ipa/Payload"
           cp -R "$APP" "$RUNNER_TEMP/ipa/Payload/"
-          (cd "$RUNNER_TEMP/ipa" && zip -qry MathsMaster.ipa Payload)
+          (cd "$RUNNER_TEMP/ipa" && zip -qry MathsMaster2.ipa Payload)
           ls -la "$RUNNER_TEMP/ipa"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: MathsMaster-unsigned-ipa
-          path: ${{ runner.temp }}/ipa/MathsMaster.ipa
+          name: MathsMaster2-unsigned-ipa
+          path: ${{ runner.temp }}/ipa/MathsMaster2.ipa
+          retention-days: 14
+
+  compile-matrix:
+    name: Compile with every Xcode 26.x (Debug, like Playgrounds)
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      # Swift Playground 4.7 ships an older Swift 6.x than the newest Xcode 26.x, and builds Debug.
+      - name: Compile app sources with each toolchain
+        run: ci/compile-matrix.sh
+
+  launch-smoke:
+    name: Launch smoke test (Debug, iPad simulator)
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode 26.x
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
+      - name: Build, launch twice, check for crashes
+        run: ci/launch-smoke.sh "$RUNNER_TEMP/smoke"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: launch-smoke
+          path: ${{ runner.temp }}/smoke
           retention-days: 14
 
   core-tests:
