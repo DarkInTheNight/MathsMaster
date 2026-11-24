@@ -5,7 +5,7 @@
 set -uo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 SOURCES=()
-while IFS= read -r f; do SOURCES+=("$f"); done < <(find "$ROOT/MathsMaster.swiftpm" -name '*.swift' ! -name Package.swift ! -path '*/.swiftpm/*' | sort)
+while IFS= read -r f; do SOURCES+=("$f"); done < <(find "$ROOT/MathsMaster2.swiftpm" -name '*.swift' ! -name Package.swift ! -path '*/.swiftpm/*' | sort)
 echo "${#SOURCES[@]} source files"
 FAIL=0
 SEEN=""

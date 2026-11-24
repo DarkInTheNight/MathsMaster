@@ -7,7 +7,7 @@ set -uo pipefail
 OUT=${1:?output dir}
 mkdir -p "$OUT"
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-BUNDLE=com.darkinthenight.mathsmaster
+BUNDLE=com.darkinthenight.mathsmaster2
 
 RUNTIME=$(xcrun simctl list runtimes -j | python3 -c '
 import json,sys
@@ -35,7 +35,7 @@ xcrun simctl boot "$UDID"
 xcrun simctl bootstatus "$UDID" -b >/dev/null
 
 echo "::group::Debug build for the simulator"
-(cd "$ROOT/MathsMaster.swiftpm" && xcodebuild build -scheme MathsMaster -configuration Debug \
+(cd "$ROOT/MathsMaster2.swiftpm" && xcodebuild build -scheme MathsMaster2 -configuration Debug \
   -destination "id=$UDID" -derivedDataPath "$RUNNER_TEMP/dd-smoke" -quiet) || { echo "::error::Debug simulator build failed"; exit 1; }
 echo "::endgroup::"
 APP=$(find "$RUNNER_TEMP/dd-smoke/Build/Products" -maxdepth 2 -name "*.app" -path "*iphonesimulator*" | head -1)
@@ -82,7 +82,7 @@ run() { # name, extra env
 }
 run first-launch ""
 run with-library "$LIB"
-xcrun simctl spawn "$UDID" log show --last 3m --style compact --predicate 'process == "MathsMaster"' > "$OUT/app-log.txt" 2>/dev/null
+xcrun simctl spawn "$UDID" log show --last 3m --style compact --predicate 'process == "MathsMaster2"' > "$OUT/app-log.txt" 2>/dev/null
 tail -80 "$OUT/app-log.txt"
 xcrun simctl shutdown "$UDID"; xcrun simctl delete "$UDID"
 exit $FAIL

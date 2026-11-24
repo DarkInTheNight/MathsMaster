@@ -5,7 +5,7 @@ The design is in [`DESIGN.md`](DESIGN.md). This file says where the code lives a
 ## Layout
 
 ```
-MathsMaster.swiftpm/            the Swift Playgrounds app project (open this folder in Playgrounds)
+MathsMaster2.swiftpm/            the Swift Playgrounds app project (open this folder in Playgrounds)
   Package.swift                 owned by the repo; never edit it through Playgrounds' settings UI
   App/                          @main app, RootView (first run / loading / error / main)
   Core/                         Foundation-only models and pure logic; also built by the root Package.swift for `swift test`

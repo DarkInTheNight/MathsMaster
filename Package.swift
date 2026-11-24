@@ -1,6 +1,6 @@
 // swift-tools-version: 6.0
 
-// CI-only package: builds the Foundation-only Core of the app (MathsMaster.swiftpm/Core)
+// CI-only package: builds the Foundation-only Core of the app (MathsMaster2.swiftpm/Core)
 // as a library so `swift test` can run unit tests on macOS runners.
 // Playgrounds app projects have no test targets; this file is not part of the app.
 
@@ -13,7 +13,7 @@ let package = Package(
         .library(name: "MathsMasterCore", targets: ["MathsMasterCore"])
     ],
     targets: [
-        .target(name: "MathsMasterCore", path: "MathsMaster.swiftpm/Core"),
+        .target(name: "MathsMasterCore", path: "MathsMaster2.swiftpm/Core"),
         .testTarget(
             name: "MathsMasterCoreTests",
             dependencies: ["MathsMasterCore"],
